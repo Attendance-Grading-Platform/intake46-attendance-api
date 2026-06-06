@@ -1,35 +1,36 @@
-version: '3.8'
+version: "3.8"
 
 services:
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: iti_attendance_api
-    ports:
-      - "8000:8000"
-    volumes:
-      - .:/var/www
-    depends_on:
-      - database
-    environment:
-      - DB_HOST=database
-      - DB_DATABASE=iti_attendance
-      - DB_USERNAME=iti_user
-      - DB_PASSWORD=iti_password
+    api:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: iti_attendance_api
+        ports:
+            - "8000:8000"
+        volumes:
+            - .:/var/www
+        depends_on:
+            - database
+        environment:
+            - DB_CONNECTION=pgsql
+            - DB_HOST=database
+            - DB_PORT=5432
+            - DB_DATABASE=iti_attendance
+            - DB_USERNAME=iti_user
+            - DB_PASSWORD=iti_password
 
-  database:
-    image: mysql:8.0
-    container_name: iti_attendance_db
-    ports:
-      - "3306:3306"
-    environment:
-      MYSQL_DATABASE: iti_attendance
-      MYSQL_USER: iti_user
-      MYSQL_PASSWORD: iti_password
-      MYSQL_ROOT_PASSWORD: root_password
-    volumes:
-      - db_data:/var/lib/mysql
+    database:
+        image: postgres:16-alpine
+        container_name: iti_attendance_db
+        ports:
+            - "5432:5432"
+        environment:
+            POSTGRES_DB: iti_attendance
+            POSTGRES_USER: iti_user
+            POSTGRES_PASSWORD: iti_password
+        volumes:
+            - db_data:/var/lib/postgresql/data
 
 volumes:
-  db_data:
+    db_data:

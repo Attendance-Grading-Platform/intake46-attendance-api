@@ -10,8 +10,9 @@ RUN apk update && apk add --no-cache \
     git \
     curl \
     bash \
+    postgresql-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo pdo_mysql gd zip
+    && docker-php-ext-install pdo pdo_pgsql gd zip
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 

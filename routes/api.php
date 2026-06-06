@@ -1,19 +1,70 @@
 <?php
 
-use Illuminate\Http\Request;
+declare(strict_types=1);
+
+use App\Http\Controllers\Api\ScannerController;
+use App\Http\Controllers\Api\V1\AuthController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Middleware\CheckAccountExpiry;
 
 /*
 |--------------------------------------------------------------------------
-| API Routes
+| API Routes — ITI Attendance & Grading Platform
 |--------------------------------------------------------------------------
 |
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "api" middleware group. Make something great!
+| Three architectural route groups:
+|
+|  1. /auth    — Public authentication endpoints (login).
+|  2. /v1      — Protected API surface behind Sanctum (logout, CRUD).
+|  3. /scan    — Public fast-path for IoT / QR scanner devices.
+|
+| All routes are automatically prefixed with /api by the framework.
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
+// ──────────────────────────────────────────────────────────
+// 1. Public — Authentication
+// ──────────────────────────────────────────────────────────
+Route::prefix('auth')->group(function (): void {
+    Route::post('/login', [AuthController::class, 'login'])
+        ->name('auth.login');
+});
+
+// ──────────────────────────────────────────────────────────
+// 2. Protected — Versioned API (v1)
+// ──────────────────────────────────────────────────────────
+Route::prefix('v1')
+    ->middleware(['auth:sanctum', CheckAccountExpiry::class])
+    ->group(function (): void {
+
+        // Auth actions that require an active session/token
+        Route::prefix('auth')->group(function (): void {
+            Route::post('/logout', [AuthController::class, 'logout'])
+                ->name('v1.auth.logout');
+        });
+
+        // ── Cohorts ──────────────────────────────────────
+        Route::prefix('cohorts')->group(function (): void {
+            // TODO: CohortController CRUD routes
+        });
+
+        // ── Grades ───────────────────────────────────────
+        Route::prefix('grades')->group(function (): void {
+            // TODO: GradeController CRUD routes
+        });
+
+        // ── Billing ──────────────────────────────────────
+        Route::prefix('billing')->group(function (): void {
+            // TODO: BillingController CRUD routes
+        });
+    });
+
+// ──────────────────────────────────────────────────────────
+// 3. Public Fast-Path — IoT / QR Scanners
+// ──────────────────────────────────────────────────────────
+Route::prefix('scan')->group(function (): void {
+    Route::post('/checkin', [ScannerController::class, 'checkin'])
+        ->name('scan.checkin');
+    Route::post('/checkout', [ScannerController::class, 'checkout'])
+        ->name('scan.checkout');
 });
