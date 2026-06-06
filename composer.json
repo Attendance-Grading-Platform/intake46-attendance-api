@@ -1,24 +1,24 @@
 {
-    "name": "laravel/laravel",
+    "name": "iti/attendance-grading-platform",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
-    "license": "MIT",
+    "description": "ITI Attendance & Grading Platform - Multi-tenant ERP System",
+    "keywords": ["laravel", "iti", "attendance", "grading"],
+    "license": "proprietary",
     "require": {
-        "php": "^8.1",
-        "guzzlehttp/guzzle": "^7.2",
-        "laravel/framework": "^10.10",
-        "laravel/sanctum": "^3.3",
-        "laravel/tinker": "^2.8"
+        "php": "^8.3",
+        "guzzlehttp/guzzle": "^7.9",
+        "laravel/framework": "^11.31",
+        "laravel/sanctum": "^4.0",
+        "laravel/tinker": "^2.10"
     },
     "require-dev": {
-        "fakerphp/faker": "^1.9.1",
-        "laravel/pint": "^1.0",
-        "laravel/sail": "^1.18",
-        "mockery/mockery": "^1.4.4",
-        "nunomaduro/collision": "^7.0",
-        "phpunit/phpunit": "^10.1",
-        "spatie/laravel-ignition": "^2.0"
+        "fakerphp/faker": "^1.23",
+        "laravel/pint": "^1.18",
+        "laravel/sail": "^1.37",
+        "mockery/mockery": "^1.6",
+        "nunomaduro/collision": "^8.5",
+        "phpunit/phpunit": "^11.5",
+        "spatie/laravel-ignition": "^2.9"
     },
     "autoload": {
         "psr-4": {
@@ -59,6 +59,9 @@
         "allow-plugins": {
             "pestphp/pest-plugin": true,
             "php-http/discovery": true
+        },
+        "audit": {
+            "block-insecure": false
         }
     },
     "minimum-stability": "stable",
