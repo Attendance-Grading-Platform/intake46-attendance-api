@@ -1,0 +1,21 @@
+meta {
+  name: Enroll Students
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/v1/cohorts/1/enroll
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: 2|E6NpxACuuVEijXOPyrCjTiWMhATNpbMwEQCzlBN687f0a1bf
+}
+
+body:json {
+  {
+    "user_ids": [2, 3]
+  }
+}

@@ -33,4 +33,19 @@ class TrackController extends Controller
 
         return $this->successResponse($tracks, 'Tracks retrieved successfully.');
     }
+
+    /**
+     * DELETE /api/v1/tracks/{track}
+     */
+    public function destroy(Track $track): JsonResponse
+    {
+        // Protection: Cannot delete if track has cohorts
+        if ($track->cohorts()->exists()) {
+            return $this->errorResponse('Cannot delete track with existing cohorts.', 422);
+        }
+
+        $track->delete();
+
+        return $this->successResponse(null, 'Track deleted successfully.');
+    }
 }

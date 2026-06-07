@@ -42,5 +42,19 @@ class BrunoTestSeeder extends Seeder
             ['name' => 'Backend Performance'],
             ['branch_id' => $branch->id]
         );
+
+        // 4. Create Test Students
+        for ($i = 1; $i <= 5; $i++) {
+            User::updateOrCreate(
+                ['email' => "student{$i}@example.com"],
+                [
+                    'name' => "Student {$i}",
+                    'password' => Hash::make('password'),
+                    'role' => 'student',
+                    'expiry_date' => now()->addYear(),
+                    'is_active' => true,
+                ]
+            );
+        }
     }
 }
