@@ -1,0 +1,22 @@
+meta {
+  name: Update Cohort
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{baseUrl}}/v1/cohorts/1
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "name": "Intake 46 - Updated",
+    "status": "active"
+  }
+}

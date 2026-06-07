@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Api\ScannerController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\CohortController;
+use App\Http\Controllers\Api\V1\TrackController;
+
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\CheckAccountExpiry;
 
@@ -43,10 +46,25 @@ Route::prefix('v1')
                 ->name('v1.auth.logout');
         });
 
-        // ── Cohorts ──────────────────────────────────────
-        Route::prefix('cohorts')->group(function (): void {
-            // TODO: CohortController CRUD routes
-        });
+        // ── Tracks ───────────────────────────────────────
+        Route::get('/tracks', [TrackController::class, 'index'])
+            ->name('v1.tracks.index');
+
+        // ── Cohorts (LC-2) ───────────────────────────────
+        Route::get('/cohorts', [CohortController::class, 'index'])
+            ->name('v1.cohorts.index');
+
+        Route::post('/cohorts', [CohortController::class, 'store'])
+            ->name('v1.cohorts.store');
+
+        Route::get('/cohorts/{cohort}', [CohortController::class, 'show'])
+            ->name('v1.cohorts.show');
+
+        Route::put('/cohorts/{cohort}', [CohortController::class, 'update'])
+            ->name('v1.cohorts.update');
+
+        Route::post('/cohorts/{cohort}/assign-admin', [CohortController::class, 'assignAdmin'])
+            ->name('v1.cohorts.assign-admin');
 
         // ── Grades ───────────────────────────────────────
         Route::prefix('grades')->group(function (): void {

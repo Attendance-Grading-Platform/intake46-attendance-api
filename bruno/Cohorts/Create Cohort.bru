@@ -1,0 +1,23 @@
+meta {
+  name: Create Cohort
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/v1/cohorts
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "track_id": 1,
+    "name": "Intake 46 - Extension",
+    "started_at": "2025-01-01"
+  }
+}
