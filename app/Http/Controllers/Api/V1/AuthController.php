@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\LoginRequest;
 use App\Models\User;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -20,21 +21,19 @@ class AuthController extends Controller
      *
      * POST /api/auth/login
      */
-    public function login(Request $request): JsonResponse
+    public function login(LoginRequest $request): JsonResponse
     {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
+        $validated = $request->validated();
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::where('email', $validated['email'])->first();
 
         // 1. Verify Identity
-        if (! $user || ! Hash::check($request->password, $user->password)) {
+        if (! $user || ! Hash::check($validated['password'], $user->password)) {
             return $this->errorResponse('Invalid email or password.', 401);
         }
 
         // 2. Enforce Account Lifecycle Constraints (SEC-2)
+        //    Returns 403 — user IS identified but forbidden from proceeding
         if (! $user->is_active) {
             return $this->errorResponse('Your account has been deactivated.', 403);
         }

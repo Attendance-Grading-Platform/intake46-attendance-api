@@ -29,9 +29,9 @@ use App\Http\Middleware\CheckAccountExpiry;
 // ──────────────────────────────────────────────────────────
 // 1. Public — Authentication
 // ──────────────────────────────────────────────────────────
-Route::prefix('auth')->group(function (): void {
-    Route::post('/login', [AuthController::class, 'login'])
-        ->name('auth.login');
+// Rate Limiting: max 5 attempts per minute
+Route::prefix('auth')->middleware('throttle:5,1')->group(function () {
+    Route::post('/login', [AuthController::class, 'login'])->name('auth.login');
 });
 
 // ──────────────────────────────────────────────────────────
