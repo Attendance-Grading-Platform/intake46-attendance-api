@@ -1,0 +1,23 @@
+meta {
+  name: Add Course Component
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/v1/courses/1/components
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: 2|E6NpxACuuVEijXOPyrCjTiWMhATNpbMwEQCzlBN687f0a1bf
+}
+
+body:json {
+  {
+    "type": "lab_deliverable",
+    "weight": 40.00,
+    "due_date": "2026-07-01 18:00:00"
+  }
+}

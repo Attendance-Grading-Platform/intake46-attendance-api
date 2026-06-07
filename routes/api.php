@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Api\ScannerController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\CohortController;
+use App\Http\Controllers\Api\V1\CourseController;
+use App\Http\Controllers\Api\V1\TrackController;
+
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\CheckAccountExpiry;
 
@@ -43,10 +47,48 @@ Route::prefix('v1')
                 ->name('v1.auth.logout');
         });
 
-        // ── Cohorts ──────────────────────────────────────
-        Route::prefix('cohorts')->group(function (): void {
-            // TODO: CohortController CRUD routes
-        });
+        // ── Tracks ───────────────────────────────────────
+        Route::get('/tracks', [TrackController::class, 'index'])
+            ->name('v1.tracks.index');
+        Route::get('/tracks/{track}/cohorts', [CohortController::class, 'trackCohorts'])
+            ->name('v1.tracks.cohorts');
+        Route::delete('/tracks/{track}', [TrackController::class, 'destroy'])
+            ->name('v1.tracks.destroy');
+
+        // ── Cohorts (LC-2) ───────────────────────────────
+        Route::get('/cohorts', [CohortController::class, 'index'])
+            ->name('v1.cohorts.index');
+
+        Route::post('/cohorts', [CohortController::class, 'store'])
+            ->name('v1.cohorts.store');
+
+        Route::get('/cohorts/{cohort}', [CohortController::class, 'show'])
+            ->name('v1.cohorts.show');
+
+        Route::put('/cohorts/{cohort}', [CohortController::class, 'update'])
+            ->name('v1.cohorts.update');
+        Route::post('/cohorts/{cohort}/enroll', [CohortController::class, 'enroll'])
+            ->name('v1.cohorts.enroll');
+        Route::get('/cohorts/{cohort}/students', [CohortController::class, 'students'])
+            ->name('v1.cohorts.students');
+
+        Route::post('/cohorts/{cohort}/assign-admin', [CohortController::class, 'assignAdmin'])
+            ->name('v1.cohorts.assign-admin');
+        Route::delete('/cohorts/{cohort}', [CohortController::class, 'destroy'])
+            ->name('v1.cohorts.destroy');
+
+        // ── Courses (D3) ─────────────────────────────────
+        Route::get('/cohorts/{cohort}/courses', [CourseController::class, 'index'])
+            ->name('v1.courses.index');
+        Route::post('/cohorts/{cohort}/courses', [CourseController::class, 'store'])
+            ->name('v1.courses.store');
+        Route::put('/courses/{course}', [CourseController::class, 'update'])
+            ->name('v1.courses.update');
+
+        Route::post('/courses/{course}/components', [CourseController::class, 'storeComponent'])
+            ->name('v1.course-components.store');
+        Route::put('/course-components/{component}', [CourseController::class, 'updateComponent'])
+            ->name('v1.course-components.update');
 
         // ── Grades ───────────────────────────────────────
         Route::prefix('grades')->group(function (): void {

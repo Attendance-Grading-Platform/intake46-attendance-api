@@ -1,0 +1,21 @@
+meta {
+  name: Update Course
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/v1/courses/1
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: 2|E6NpxACuuVEijXOPyrCjTiWMhATNpbMwEQCzlBN687f0a1bf
+}
+
+body:json {
+  {
+    "name": "PHP & Laravel Advanced"
+  }
+}

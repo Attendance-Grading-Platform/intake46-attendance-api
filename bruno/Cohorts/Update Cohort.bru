@@ -1,0 +1,21 @@
+meta {
+  name: Update Cohort
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{baseUrl}}/v1/cohorts/1
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: 1|ZKGIb1EF73xFtsiNCjnJOx7HR8NbSgyaXuPSaLk23c5a5299
+}
+
+body:json {
+  {
+    "status": "closed"
+  }
+}

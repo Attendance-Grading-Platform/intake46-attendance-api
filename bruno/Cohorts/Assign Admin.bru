@@ -1,0 +1,21 @@
+meta {
+  name: Assign Admin
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/v1/cohorts/1/assign-admin
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: 1|ZKGIb1EF73xFtsiNCjnJOx7HR8NbSgyaXuPSaLk23c5a5299
+}
+
+body:json {
+  {
+    "user_id": 2
+  }
+}

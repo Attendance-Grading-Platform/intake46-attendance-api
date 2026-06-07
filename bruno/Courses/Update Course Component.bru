@@ -1,0 +1,21 @@
+meta {
+  name: Update Course Component
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{baseUrl}}/v1/course-components/1
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: 2|E6NpxACuuVEijXOPyrCjTiWMhATNpbMwEQCzlBN687f0a1bf
+}
+
+body:json {
+  {
+    "weight": 50.00
+  }
+}
