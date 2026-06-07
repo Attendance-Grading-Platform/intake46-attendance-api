@@ -12,11 +12,19 @@ class UserFactory extends Factory
 
     public function definition(): array
     {
+        $compensationType = fake()->randomElement(['internal', 'external']);
+
         return [
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
+            'role' => fake()->randomElement(['branch_manager', 'track_admin', 'instructor', 'student']),
+            'expiry_date' => fake()->optional()->dateTimeBetween('now', '+1 year'),
+            'is_active' => true,
+            'compensation_type' => $compensationType,
+            'hourly_rate' => $compensationType === 'external' ? fake()->randomFloat(2, 50, 200) : null,
+            'fixed_salary' => $compensationType === 'internal' ? fake()->randomFloat(2, 3000, 10000) : null,
             'remember_token' => Str::random(10),
 
             // Base Definition defaults to an active Student
