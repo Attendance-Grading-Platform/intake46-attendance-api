@@ -1,0 +1,259 @@
+{
+	"info": {
+		"name": "ITI Engagement & Attendance API",
+		"description": "Engagement Scheduling & Session Generation API — Day 2 endpoints.\n\n**Setup:**\n1. Run the \"Login\" request first to get a token.\n2. The token is auto-saved to the `token` collection variable.\n3. All other requests use `{{token}}` automatically.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8000/api",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{token}}",
+				"type": "string"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"if (res.data && res.data.token) {",
+									"    pm.collectionVariables.set('token', res.data.token);",
+									"    console.log('✅ Token saved:', res.data.token);",
+									"}",
+									"",
+									"pm.test('Login successful', function () {",
+									"    pm.response.to.have.status(200);",
+									"    pm.expect(res.status).to.eql('success');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"lab-instructor@iti.test\",\n  \"password\": \"password\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "login"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Engagements",
+			"item": [
+				{
+					"name": "Create Engagement",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"",
+									"pm.test('Engagement created with 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"    pm.expect(res.status).to.eql('success');",
+									"});",
+									"",
+									"pm.test('Sessions were auto-generated', function () {",
+									"    pm.expect(res.data.sessions_count).to.be.above(0);",
+									"});",
+									"",
+									"pm.test('Response includes instructor and cohort', function () {",
+									"    pm.expect(res.data.engagement.instructor).to.have.property('email');",
+									"    pm.expect(res.data.engagement.cohort).to.have.property('name');",
+									"});",
+									"",
+									"// Save engagement ID for the Show request",
+									"if (res.data && res.data.engagement) {",
+									"    pm.collectionVariables.set('engagementId', res.data.engagement.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"cohort_id\": 1,\n  \"instructor_id\": 1,\n  \"type\": \"lab\",\n  \"start_date\": \"2026-07-01\",\n  \"end_date\": \"2026-07-31\",\n  \"scheduled_hours\": 4,\n  \"days_of_week\": [0, 3]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/engagements",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "engagements"]
+						}
+					}
+				},
+				{
+					"name": "Create Engagement — Validation Error",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Returns 422 with validation errors', function () {",
+									"    pm.response.to.have.status(422);",
+									"    const res = pm.response.json();",
+									"    pm.expect(res).to.have.property('errors');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"cohort_id\": 9999,\n  \"instructor_id\": 999,\n  \"type\": \"InvalidType\",\n  \"start_date\": \"2020-01-01\",\n  \"end_date\": \"2019-01-01\",\n  \"scheduled_hours\": 0,\n  \"days_of_week\": [9]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/engagements",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "engagements"]
+						}
+					}
+				},
+				{
+					"name": "List Engagements",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Returns 200 with engagement list', function () {",
+									"    pm.response.to.have.status(200);",
+									"    const res = pm.response.json();",
+									"    pm.expect(res.status).to.eql('success');",
+									"    pm.expect(res.data).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/engagements",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "engagements"]
+						}
+					}
+				},
+				{
+					"name": "List Engagements — Filter by Type",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/engagements?type=lab",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "engagements"],
+							"query": [
+								{ "key": "type", "value": "lab" }
+							]
+						}
+					}
+				},
+				{
+					"name": "List Engagements — Active Only",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/engagements?active_only=true",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "engagements"],
+							"query": [
+								{ "key": "active_only", "value": "true" }
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Engagement by ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Returns engagement with sessions', function () {",
+									"    pm.response.to.have.status(200);",
+									"    const res = pm.response.json();",
+									"    pm.expect(res.data).to.have.property('sessions');",
+									"    pm.expect(res.data).to.have.property('instructor');",
+									"    pm.expect(res.data).to.have.property('cohort');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/engagements/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "engagements", "1"]
+						}
+					}
+				}
+			]
+		}
+	]
+}
