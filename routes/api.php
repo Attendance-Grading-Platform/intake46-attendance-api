@@ -7,6 +7,8 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CohortController;
 use App\Http\Controllers\Api\V1\CourseController;
 use App\Http\Controllers\Api\V1\TrackController;
+use App\Http\Controllers\API\Student\GradeController;
+use App\Http\Controllers\API\Instructor\SubmissionReviewController;
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\CheckAccountExpiry;
@@ -90,15 +92,25 @@ Route::prefix('v1')
         Route::put('/course-components/{component}', [CourseController::class, 'updateComponent'])
             ->name('v1.course-components.update');
 
-        // ── Grades ───────────────────────────────────────
+        // — Grades (Student)
         Route::prefix('grades')->group(function (): void {
-            // TODO: GradeController CRUD routes
+            Route::get('/', [GradeController::class, 'index'])->name('v1.grades.index');
         });
 
-        // ── Billing ──────────────────────────────────────
+        // — Submissions (Instructor)
+        Route::prefix('submissions')->group(function (): void {
+            Route::get('/', [SubmissionReviewController::class, 'index'])->name('v1.submissions.index');
+            Route::put('/{id}', [SubmissionReviewController::class, 'update'])->name('v1.submissions.update');
+
+            // Complex Endpoint: Detailed breakdown for a specific student
+            Route::get('/students/{id}/grades', [SubmissionReviewController::class, 'studentGradesDetail'])->name('v1.submissions.student.grades');
+        });
+
+        // — Billing
         Route::prefix('billing')->group(function (): void {
             // TODO: BillingController CRUD routes
         });
+
     });
 
 // ──────────────────────────────────────────────────────────
