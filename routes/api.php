@@ -92,7 +92,7 @@ Route::prefix('v1')
         Route::put('/course-components/{component}', [CourseController::class, 'updateComponent'])
             ->name('v1.course-components.update');
 
-            // — Grades (Student)
+        // — Grades (Student)
         Route::prefix('grades')->group(function (): void {
             Route::get('/', [GradeController::class, 'index'])->name('v1.grades.index');
         });
@@ -101,6 +101,9 @@ Route::prefix('v1')
         Route::prefix('submissions')->group(function (): void {
             Route::get('/', [SubmissionReviewController::class, 'index'])->name('v1.submissions.index');
             Route::put('/{id}', [SubmissionReviewController::class, 'update'])->name('v1.submissions.update');
+
+            // Complex Endpoint: Detailed breakdown for a specific student
+            Route::get('/students/{id}/grades', [SubmissionReviewController::class, 'studentGradesDetail'])->name('v1.submissions.student.grades');
         });
 
         // — Billing
@@ -119,4 +122,3 @@ Route::prefix('scan')->group(function (): void {
     Route::post('/checkout', [ScannerController::class, 'checkout'])
         ->name('scan.checkout');
 });
-

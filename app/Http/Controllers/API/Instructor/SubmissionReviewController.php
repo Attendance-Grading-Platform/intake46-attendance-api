@@ -4,7 +4,8 @@ namespace App\Http\Controllers\API\Instructor;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\SubmissionReviewResource;
-use App\Models\Submission; // Adjust if your model name is LabSubmission or Assignment
+use App\Models\Submission;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class SubmissionReviewController extends Controller
@@ -43,6 +44,44 @@ class SubmissionReviewController extends Controller
         return response()->json([
             'message' => 'Submission graded successfully.',
             'data' => new SubmissionReviewResource($submission)
+        ]);
+    }
+
+    /**
+     * Complex GET Endpoint: Get a detailed complex breakdown of a specific student's grades.
+     */
+    public function studentGradesDetail(string $id)
+    {
+        // Fetch the student with user role or abort if not found
+        $student = User::where('role', 'student')->findOrFail($id);
+
+        // Load grades with course and lab submission relationships
+        $grades = $student->grades()->with(['course', 'labSubmission'])->get();
+
+        // Map the breakdown components (Raw, Max, Normalized, Penalty)
+        $report = $grades->map(function ($grade) {
+            $rawScore = $grade->score;
+            $maxScore = $grade->labSubmission->max_score ?? 100;
+            $penaltyAmount = $grade->late_penalty ?? 0;
+            $normalizedScore = $grade->normalized_score ?? $rawScore;
+
+            return [
+                'course_name' => $grade->course?->name,
+                'component_id' => $grade->id,
+                'raw_score' => $rawScore,
+                'max_score' => $maxScore,
+                'penalty_amount' => $penaltyAmount,
+                'normalized_score' => $normalizedScore,
+                'final_score' => $grade->final_score ?? ($rawScore - $penaltyAmount),
+            ];
+        });
+
+        return response()->json([
+            'student' => [
+                'id' => $student->id,
+                'name' => $student->name,
+            ],
+            'grades_breakdown' => $report
         ]);
     }
 }
