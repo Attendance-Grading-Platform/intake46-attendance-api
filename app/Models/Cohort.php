@@ -55,6 +55,14 @@ class Cohort extends Model
         return $this->hasMany(Course::class);
     }
 
+    /**
+     * All teaching engagements scheduled for this cohort (ENG-3).
+     */
+    public function engagements(): HasMany
+    {
+        return $this->hasMany(Engagement::class);
+    }
+
     public function students(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'cohort_students')

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -57,5 +59,33 @@ class User extends Authenticatable
             'hourly_rate' => 'decimal:2',
             'fixed_salary' => 'decimal:2',
         ];
+    }
+
+    /* ──────────────────────────────────────────────
+     |  Engagement & Attendance Relationships
+     |──────────────────────────────────────────────*/
+
+    /**
+     * Engagements where this user is the assigned instructor (ENG-4).
+     */
+    public function engagements(): HasMany
+    {
+        return $this->hasMany(Engagement::class, 'instructor_id');
+    }
+
+    /**
+     * Attendance records for this user as a student.
+     */
+    public function attendanceRecords(): HasMany
+    {
+        return $this->hasMany(AttendanceRecord::class, 'student_id');
+    }
+
+    /**
+     * The student's standalone attendance ledger (ATT-4, ATT-6).
+     */
+    public function attendanceLedger(): HasOne
+    {
+        return $this->hasOne(AttendanceLedger::class, 'student_id');
     }
 }
