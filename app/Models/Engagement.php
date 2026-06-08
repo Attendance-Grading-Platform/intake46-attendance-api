@@ -1,0 +1,104 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+
+/**
+ * An Engagement is a teaching booking with a type, a date range,
+ * scheduled session hours, and an assigned instructor.
+ *
+ * @see ENG-3, ENG-4, ENG-5
+ */
+class Engagement extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'cohort_id',
+        'instructor_id',
+        'type',
+        'start_date',
+        'end_date',
+        'scheduled_hours',
+    ];
+
+    protected $casts = [
+        'start_date'      => 'date',
+        'end_date'        => 'date',
+        'scheduled_hours' => 'integer',
+    ];
+
+    /* ──────────────────────────────────────────────
+     |  Scopes
+     |──────────────────────────────────────────────*/
+
+    /**
+     * Engagements whose active window includes the current date.
+     * Used for ENG-5 / ANN-2 time-based authorization.
+     */
+    public function scopeActive(Builder $query): Builder
+    {
+        $today = now()->toDateString();
+
+        return $query->where('start_date', '<=', $today)
+                     ->where('end_date', '>=', $today);
+    }
+
+    /**
+     * Filter engagements by type.
+     */
+    public function scopeOfType(Builder $query, string $type): Builder
+    {
+        return $query->where('type', $type);
+    }
+
+    /* ──────────────────────────────────────────────
+     |  Relationships
+     |──────────────────────────────────────────────*/
+
+    public function cohort(): BelongsTo
+    {
+        return $this->belongsTo(Cohort::class);
+    }
+
+    public function instructor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'instructor_id');
+    }
+
+    public function sessions(): HasMany
+    {
+        return $this->hasMany(EngagementSession::class);
+    }
+
+    /**
+     * Shortcut: all attendance records across every session of this engagement.
+     */
+    public function attendanceRecords(): HasManyThrough
+    {
+        return $this->hasManyThrough(AttendanceRecord::class, EngagementSession::class);
+    }
+
+    /* ──────────────────────────────────────────────
+     |  Helpers
+     |──────────────────────────────────────────────*/
+
+    /**
+     * Total delivered hours for billing (BIL-1).
+     * Sum of scheduled_hours for every session flagged as delivered.
+     */
+    public function deliveredHours(): int
+    {
+        return (int) $this->sessions()
+                          ->where('delivered', true)
+                          ->count() * $this->scheduled_hours;
+    }
+}
