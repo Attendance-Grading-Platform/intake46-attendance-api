@@ -91,5 +91,11 @@ class DatabaseSeeder extends Seeder
 
         // Expired instructor for billing edge cases
         User::factory()->count(2)->instructor('external')->expired()->create();
+
+        
+       // 3. Academic Structure (Branch, Track, Cohort, Courses)
+        $this->call([
+            AcademicStructureSeeder::class,
+        ]);
     }
 }
