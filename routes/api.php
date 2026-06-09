@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\CourseController;
 use App\Http\Controllers\Api\V1\TrackController;
 use App\Http\Controllers\API\Student\GradeController;
 use App\Http\Controllers\API\Instructor\SubmissionReviewController;
+use App\Http\Controllers\Api\V1\AnnouncementController;
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\CheckAccountExpiry;
@@ -105,6 +106,10 @@ Route::prefix('v1')
             // Complex Endpoint: Detailed breakdown for a specific student
             Route::get('/students/{id}/grades', [SubmissionReviewController::class, 'studentGradesDetail'])->name('v1.submissions.student.grades');
         });
+
+        // ── Announcements ────────────────────────────────
+        Route::post('/announcements', [AnnouncementController::class, 'store'])
+            ->name('v1.announcements.store');
 
         // — Billing
         Route::prefix('billing')->group(function (): void {
