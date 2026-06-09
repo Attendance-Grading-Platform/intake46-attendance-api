@@ -66,12 +66,23 @@ class UserPolicy
     /**
      * Determine whether the user can create models.
      * * * SEC-1: Top-down provisioning. No public self-registration.
+     * * * Hierarchy: Branch Manager → Track Admins → instructors and students.
      */
-    public function create(User $user): Response
+    public function create(User $user, string $targetRole = 'student'): Response
     {
-        return in_array($user->role, ['branch_manager', 'track_admin'])
-            ? Response::allow()
-            : Response::deny('SEC-1: Only management can provision new accounts.');
+        // Branch Manager Context: Can provision any role
+        if ($user->role === 'branch_manager') {
+            return Response::allow();
+        }
+
+        // Track Admin Context: Can only provision instructors and students
+        if ($user->role === 'track_admin') {
+            return in_array($targetRole, ['instructor', 'student'])
+                ? Response::allow()
+                : Response::deny('SEC-1: Track Admins can only create instructor or student accounts.');
+        }
+
+        return Response::deny('SEC-1: Only management can provision new accounts.');
     }
 
     /**

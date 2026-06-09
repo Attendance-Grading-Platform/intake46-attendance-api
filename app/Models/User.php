@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -87,5 +88,37 @@ class User extends Authenticatable
     public function attendanceLedger(): HasOne
     {
         return $this->hasOne(AttendanceLedger::class, 'student_id');
+    }
+
+    /* ──────────────────────────────────────────────
+     |  Cohort & Lab Group Pivot Relationships
+     |──────────────────────────────────────────────*/
+
+    /**
+     * Cohorts this user administers as a Track Admin (LC-2).
+     * Pivot: cohort_track_admins (cohort_id, user_id)
+     */
+    public function administeredCohorts(): BelongsToMany
+    {
+        return $this->belongsToMany(Cohort::class, 'cohort_track_admins');
+    }
+
+    /**
+     * Cohorts this user is enrolled in as a Student.
+     * Pivot: cohort_students (cohort_id, user_id, enrolled_at)
+     */
+    public function enrolledCohorts(): BelongsToMany
+    {
+        return $this->belongsToMany(Cohort::class, 'cohort_students')
+                    ->withPivot('enrolled_at');
+    }
+
+    /**
+     * Lab groups this user instructs (ACC-3, GRD-4).
+     * Pivot: lab_group_instructors (lab_group_id, user_id)
+     */
+    public function instructedLabGroups(): BelongsToMany
+    {
+        return $this->belongsToMany(LabGroup::class, 'lab_group_instructors');
     }
 }
