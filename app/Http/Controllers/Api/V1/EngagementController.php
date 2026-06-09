@@ -5,95 +5,81 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreEngagementRequest;
+use App\Models\Cohort;
 use App\Models\Engagement;
-use App\Services\EngagementService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-/**
- * EngagementController — manages the Engagement lifecycle.
- *
- * ENG-3: Create an engagement (with automatic session generation).
- * ENG-5: Instructors only see data for their active engagements.
- *
- * Pattern: Skinny controller → delegates business logic to EngagementService.
- */
 class EngagementController extends Controller
 {
     use ApiResponse;
 
-    public function __construct(protected EngagementService $engagementService) {}
-
-    /**
-     * GET /api/v1/engagements
-     *
-     * List engagements. Optionally filter by cohort_id, instructor_id, or type.
-     */
-    public function index(Request $request): JsonResponse
+    public function index(Cohort $cohort): JsonResponse
     {
-        $engagements = Engagement::with([
-                'instructor:id,name,email',
-                'cohort:id,name',
-                'sessions',
-            ])
-            ->when($request->cohort_id, fn ($q) => $q->where('cohort_id', $request->cohort_id))
-            ->when($request->instructor_id, fn ($q) => $q->where('instructor_id', $request->instructor_id))
-            ->when($request->type, fn ($q) => $q->ofType($request->type))
-            ->when($request->boolean('active_only'), fn ($q) => $q->active())
-            ->orderByDesc('start_date')
-            ->get();
+        $this->authorize('viewAny', Engagement::class);
+
+        $engagements = $cohort->engagements()->get();
 
         return $this->successResponse($engagements, 'Engagements retrieved successfully.');
     }
 
-    /**
-     * POST /api/v1/engagements
-     *
-     * Create a new engagement and auto-generate its sessions based on
-     * the provided days_of_week within the start_date → end_date range.
-     *
-     * @see StoreEngagementRequest  for validation rules
-     * @see EngagementService       for transactional logic
-     */
-    public function store(StoreEngagementRequest $request): JsonResponse
+    public function store(Request $request): JsonResponse
     {
-        $validated  = $request->validated();
-        $daysOfWeek = $validated['days_of_week'];
+        $this->authorize('create', Engagement::class);
 
-        $result = $this->engagementService->createWithSessions(
-            data: $validated,
-            daysOfWeek: $daysOfWeek,
-        );
-
-        return $this->successResponse(
-            data: [
-                'engagement' => $result['engagement'],
-                'sessions'   => $result['sessions'],
-                'sessions_count' => $result['sessions']->count(),
-            ],
-            message: sprintf(
-                'Engagement created successfully with %d session(s) generated.',
-                $result['sessions']->count(),
-            ),
-            code: 201,
-        );
-    }
-
-    /**
-     * GET /api/v1/engagements/{engagement}
-     *
-     * Return a single engagement with its sessions and instructor.
-     */
-    public function show(Engagement $engagement): JsonResponse
-    {
-        $engagement->load([
-            'instructor:id,name,email',
-            'cohort:id,name',
-            'sessions' => fn ($q) => $q->orderBy('session_date'),
+        $validated = $request->validate([
+            'cohort_id' => 'required|exists:cohorts,id',
+            'instructor_id' => 'required|exists:users,id',
+            'type' => 'required|string',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'scheduled_hours' => 'required|integer|min:1', 
         ]);
 
+        $engagement = Engagement::create([
+            'instructor_id' => $validated['instructor_id'],
+            'type' => $validated['type'],
+            'start_date' => $validated['start_date'],
+            'end_date' => $validated['end_date'],
+            'scheduled_hours' => $validated['scheduled_hours'], 
+        ]);
+
+        $engagement->cohorts()->attach($validated['cohort_id']);
+
+        return $this->successResponse($engagement, 'Engagement created successfully.', 201);
+    }
+
+    public function show(Engagement $engagement): JsonResponse
+    {
+        $this->authorize('view', $engagement);
+
         return $this->successResponse($engagement, 'Engagement retrieved successfully.');
+    }
+
+    public function update(Request $request, Engagement $engagement): JsonResponse
+    {
+        $this->authorize('update', $engagement);
+
+        $validated = $request->validate([
+            'instructor_id' => 'sometimes|exists:users,id',
+            'type' => 'sometimes|string',
+            'start_date' => 'sometimes|date',
+            'end_date' => 'sometimes|date|after_or_equal:start_date',
+            'scheduled_hours' => 'sometimes|integer|min:1', 
+        ]);
+
+        $engagement->update($validated);
+
+        return $this->successResponse($engagement, 'Engagement updated successfully.');
+    }
+
+    public function destroy(Engagement $engagement): JsonResponse
+    {
+        $this->authorize('delete', $engagement);
+
+        $engagement->delete();
+
+        return $this->successResponse(null, 'Engagement deleted successfully.');
     }
 }

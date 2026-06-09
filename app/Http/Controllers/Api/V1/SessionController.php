@@ -29,6 +29,8 @@ class SessionController extends Controller
     {
         $session = EngagementSession::findOrFail($id);
 
+        $this->authorize('update', $session->engagement);
+
         $validated = $request->validate([
             'delivered' => ['required', 'boolean'],
         ]);

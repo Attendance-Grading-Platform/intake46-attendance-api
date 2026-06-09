@@ -61,13 +61,33 @@ class GradePolicy
 
     /**
      * Determine whether the user can create a grade (submit an evaluation).
+     * * * GRD-4: Instructors can only grade students in their assigned lab groups.
      */
-    public function create(User $user): Response
+    public function create(User $user, User $student): Response
     {
         // Students can never issue grades.
-        return in_array($user->role, ['branch_manager', 'track_admin', 'instructor'])
-            ? Response::allow()
-            : Response::deny('Students are not permitted to submit grades.');
+        if ($user->role === 'student') {
+            return Response::deny('Students are not permitted to submit grades.');
+        }
+
+        // Branch Manager & Track Admin: Broad create authority
+        if (in_array($user->role, ['branch_manager', 'track_admin'])) {
+            return Response::allow();
+        }
+
+        // Instructor Context (GRD-4): Can only grade students in their assigned lab groups
+        if ($user->role === 'instructor') {
+            $isMyStudent = $user->instructedLabGroups()
+                ->whereHas('students', function ($query) use ($student) {
+                    $query->where('users.id', $student->id);
+                })->exists();
+
+            return $isMyStudent
+                ? Response::allow()
+                : Response::deny('GRD-4: You can only grade students in your assigned lab groups.');
+        }
+
+        return Response::deny('Access Denied.');
     }
 
     /**
