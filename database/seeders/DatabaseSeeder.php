@@ -96,6 +96,8 @@ class DatabaseSeeder extends Seeder
        // 3. Academic Structure (Branch, Track, Cohort, Courses)
         $this->call([
             AcademicStructureSeeder::class,
+            GradeSeeder::class,
+            SubmissionSeeder::class,
         ]);
     }
 }

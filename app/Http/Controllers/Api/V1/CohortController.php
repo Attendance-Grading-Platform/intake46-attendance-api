@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Cohort;
+use App\Models\Track;
 use App\Models\User;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -15,15 +16,40 @@ class CohortController extends Controller
 {
     use ApiResponse;
 
-    public function index(): JsonResponse
+    /**
+     * Retrieve a filtered list of cohorts based on the user's role.
+     * Plugs the "List Loophole" (Cohort::all() data leak).
+     *
+     * GET /api/v1/cohorts
+     */
+    public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Cohort::class);
 
-        $cohorts = Cohort::all();
+        $user = $request->user();
+        $cohorts = collect();
+
+        // Role-based visibility filtering
+        if ($user->role === 'branch_manager') {
+            $cohorts = Cohort::all();
+        } elseif ($user->role === 'track_admin') {
+            $cohorts = $user->administeredCohorts()->get();
+        } elseif ($user->role === 'instructor') {
+            $cohorts = Cohort::whereHas('engagements', function ($query) use ($user) {
+                $query->where('engagements.instructor_id', $user->id);
+            })->get();
+        } elseif ($user->role === 'student') {
+            $cohorts = $user->enrolledCohorts()->get();
+        }
 
         return $this->successResponse($cohorts, 'Cohorts retrieved successfully.');
     }
 
+    /**
+     * Create a new cohort.
+     *
+     * POST /api/v1/cohorts
+     */
     public function store(Request $request): JsonResponse
     {
         $this->authorize('create', Cohort::class);
@@ -41,6 +67,11 @@ class CohortController extends Controller
         return $this->successResponse($cohort, 'Cohort created successfully.', 201);
     }
 
+    /**
+     * View a specific cohort.
+     *
+     * GET /api/v1/cohorts/{cohort}
+     */
     public function show(Cohort $cohort): JsonResponse
     {
         $this->authorize('view', $cohort);
@@ -48,6 +79,11 @@ class CohortController extends Controller
         return $this->successResponse($cohort, 'Cohort retrieved successfully.');
     }
 
+    /**
+     * Update a cohort.
+     *
+     * PUT /api/v1/cohorts/{cohort}
+     */
     public function update(Request $request, Cohort $cohort): JsonResponse
     {
         $this->authorize('update', $cohort);
@@ -64,6 +100,11 @@ class CohortController extends Controller
         return $this->successResponse($cohort, 'Cohort updated successfully.');
     }
 
+    /**
+     * Delete a cohort.
+     *
+     * DELETE /api/v1/cohorts/{cohort}
+     */
     public function destroy(Cohort $cohort): JsonResponse
     {
         $this->authorize('delete', $cohort);
@@ -73,6 +114,11 @@ class CohortController extends Controller
         return $this->successResponse(null, 'Cohort deleted successfully.');
     }
 
+    /**
+     * Assign a track admin to a cohort.
+     *
+     * POST /api/v1/cohorts/{cohort}/assign-admin
+     */
     public function assignAdmin(Request $request, Cohort $cohort): JsonResponse
     {
         $this->authorize('assignAdmin', $cohort);
@@ -93,5 +139,80 @@ class CohortController extends Controller
         $cohort->trackAdmins()->syncWithoutDetaching([$validated['user_id']]);
 
         return $this->successResponse(null, 'Track Admin assigned successfully.');
+    }
+
+    /**
+     * Retrieve a filtered list of cohorts for a specific track.
+     *
+     * GET /api/v1/tracks/{track}/cohorts
+     */
+    public function trackCohorts(Request $request, Track $track): JsonResponse
+    {
+        $this->authorize('viewAny', Cohort::class);
+
+        $user = $request->user();
+        $query = Cohort::where('track_id', $track->id);
+
+        // Role-based visibility filtering bounded by track_id
+        if ($user->role === 'track_admin') {
+            $query->whereHas('trackAdmins', function ($q) use ($user) {
+                $q->where('users.id', $user->id);
+            });
+        } elseif ($user->role === 'instructor') {
+            $query->whereHas('engagements', function ($q) use ($user) {
+                $q->where('engagements.instructor_id', $user->id);
+            });
+        } elseif ($user->role === 'student') {
+            $query->whereHas('students', function ($q) use ($user) {
+                $q->where('users.id', $user->id);
+            });
+        }
+
+        $cohorts = $query->get();
+
+        return $this->successResponse($cohorts, 'Track cohorts retrieved successfully.');
+    }
+
+    /**
+     * Retrieve the list of students enrolled in a specific cohort.
+     *
+     * GET /api/v1/cohorts/{cohort}/students
+     */
+    public function students(Cohort $cohort): JsonResponse
+    {
+        // If they are authorized to view the cohort, they can see its roster
+        $this->authorize('view', $cohort);
+
+        $students = $cohort->students;
+
+        return $this->successResponse($students, 'Cohort roster retrieved successfully.');
+    }
+
+    /**
+     * Enroll a student into a cohort.
+     *
+     * POST /api/v1/cohorts/{cohort}/enroll
+     */
+    public function enroll(Request $request, Cohort $cohort): JsonResponse
+    {
+        // Requires update authority on the cohort (Branch Manager typically)
+        $this->authorize('update', $cohort);
+
+        $validated = $request->validate([
+            'user_id' => [
+                'required',
+                'exists:users,id',
+                function ($attribute, $value, $fail) {
+                    $user = User::find($value);
+                    if ($user && $user->role !== 'student') {
+                        $fail('The selected user must have the student role.');
+                    }
+                },
+            ],
+        ]);
+
+        $cohort->students()->syncWithoutDetaching([$validated['user_id'] => ['enrolled_at' => now()]]);
+
+        return $this->successResponse(null, 'Student enrolled successfully.');
     }
 }

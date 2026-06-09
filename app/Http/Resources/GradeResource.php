@@ -15,24 +15,24 @@ class GradeResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'score' => $this->score,
-            'final_score' => $this->final_score,
-            'override_score' => $this->override_score,
-            'is_overridden' => (bool)$this->is_overridden,
-            'late_penalty' => $this->late_penalty,
-            'course' => [
-                'id' => $this->course->id,
-                'name' => $this->course->name,
-                'code' => $this->course->code,
+            'id'               => $this->id,
+            'student_id'       => $this->student_id,
+            'raw_score'        => $this->raw_score,
+            'raw_max'          => $this->raw_max,
+            'normalized_score' => $this->normalized_score,
+            'final_score'      => $this->final_score ?? $this->raw_score,
+            'is_overridden'    => $this->overridden_by !== null,
+            'original_value'   => $this->when($this->overridden_by !== null, $this->original_value),
+            'override_note'    => $this->when($this->overridden_by !== null, $this->override_note),
+            'course_component' => [
+                'id'     => $this->courseComponent?->id,
+                'type'   => $this->courseComponent?->type,
+                'weight' => $this->courseComponent?->weight,
             ],
-            'lab_submission' => $this->whenLoaded('labSubmission', function () {
-                return [
-                    'id' => $this->labSubmission->id,
-                    'submitted_at' => $this->labSubmission->created_at?->toIso8601String(),
-                    'status' => $this->labSubmission->status,
-                ];
-            }),
+            'course' => [
+                'id'   => $this->courseComponent?->course?->id,
+                'name' => $this->courseComponent?->course?->name,
+            ],
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }
