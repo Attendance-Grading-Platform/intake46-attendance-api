@@ -47,7 +47,7 @@ class CohortPolicy
 
         if ($user->role === 'instructor') {
             // Instructor sees the cohort if they have any engagements scheduled for it
-            return $cohort->engagements()->where('instructor_id', $user->id)->exists();
+            return $cohort->engagements()->where('engagements.instructor_id', $user->id)->exists();
         }
 
         if ($user->role === 'student') {

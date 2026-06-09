@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Track;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 /**
  * TrackController — read-only track listing.
@@ -37,8 +38,9 @@ class TrackController extends Controller
     /**
      * DELETE /api/v1/tracks/{track}
      */
-    public function destroy(Track $track): JsonResponse
+    public function destroy(Request $request, Track $track): JsonResponse
     {
+        abort_if($request->user()->role !== 'branch_manager', 403, 'Only Branch Managers can delete tracks.');
         // Protection: Cannot delete if track has cohorts
         if ($track->cohorts()->exists()) {
             return $this->errorResponse('Cannot delete track with existing cohorts.', 422);
