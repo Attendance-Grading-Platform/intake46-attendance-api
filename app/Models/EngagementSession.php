@@ -33,9 +33,9 @@ class EngagementSession extends Model
         'delivered'    => 'boolean',
     ];
 
-    /* ──────────────────────────────────────────────
-     |  Relationships
-     |──────────────────────────────────────────────*/
+/* ──────────────────────────────────────────────
+    |  Relationships
+    |──────────────────────────────────────────────*/
 
     public function engagement(): BelongsTo
     {

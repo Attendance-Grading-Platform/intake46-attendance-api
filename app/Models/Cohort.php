@@ -57,10 +57,11 @@ class Cohort extends Model
 
     /**
      * All teaching engagements scheduled for this cohort (ENG-3).
+     * Pivot: engagement_cohorts
      */
-    public function engagements(): HasMany
+    public function engagements(): BelongsToMany
     {
-        return $this->hasMany(Engagement::class);
+        return $this->belongsToMany(Engagement::class, 'engagement_cohorts');
     }
 
     public function students(): BelongsToMany
