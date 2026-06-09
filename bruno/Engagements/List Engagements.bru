@@ -1,0 +1,22 @@
+meta {
+  name: List Engagements
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/v1/engagements
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+params:query {
+  ~cohort_id: 1
+  ~instructor_id: 1
+  ~type: lab
+  ~active_only: true
+}

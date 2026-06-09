@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\ScannerController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CohortController;
 use App\Http\Controllers\Api\V1\CourseController;
+use App\Http\Controllers\Api\V1\EngagementController;
+use App\Http\Controllers\Api\V1\SessionController;
 use App\Http\Controllers\Api\V1\TrackController;
 use App\Http\Controllers\API\Student\GradeController;
 use App\Http\Controllers\API\Instructor\SubmissionReviewController;
@@ -107,9 +109,22 @@ Route::prefix('v1')
             Route::get('/students/{id}/grades', [SubmissionReviewController::class, 'studentGradesDetail'])->name('v1.submissions.student.grades');
         });
 
+ feat/ENG-ATT-controller
+        // ── Engagements (ENG-3, ENG-4) ─────────────────
+        Route::get('/engagements', [EngagementController::class, 'index'])
+            ->name('v1.engagements.index');
+        Route::post('/engagements', [EngagementController::class, 'store'])
+            ->name('v1.engagements.store');
+        Route::get('/engagements/{engagement}', [EngagementController::class, 'show'])
+            ->name('v1.engagements.show');
+
+        // ── Sessions (ENG-4: delivered flag) ────────────
+        Route::patch('/sessions/{session}', [SessionController::class, 'update'])
+            ->name('v1.sessions.update');
         // ── Announcements ────────────────────────────────
         Route::post('/announcements', [AnnouncementController::class, 'store'])
             ->name('v1.announcements.store');
+release
 
         // — Billing
         Route::prefix('billing')->group(function (): void {

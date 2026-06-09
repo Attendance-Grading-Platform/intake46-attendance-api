@@ -1,0 +1,27 @@
+meta {
+  name: Create Engagement
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/v1/engagements
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "cohort_id": 1,
+    "instructor_id": 1,
+    "type": "lab",
+    "start_date": "2026-07-01",
+    "end_date": "2026-07-31",
+    "scheduled_hours": 4,
+    "days_of_week": [0, 3]
+  }
+}
