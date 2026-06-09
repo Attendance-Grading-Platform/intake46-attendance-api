@@ -12,6 +12,8 @@ use App\Http\Controllers\Api\V1\TrackController;
 use App\Http\Controllers\API\Student\GradeController;
 use App\Http\Controllers\API\Instructor\SubmissionReviewController;
 use App\Http\Controllers\Api\V1\AnnouncementController;
+use App\Http\Controllers\Api\V1\AttendanceController;
+use App\Http\Controllers\Api\V1\BillingController;
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\CheckAccountExpiry;
@@ -110,7 +112,6 @@ Route::prefix('v1')
             Route::get('/students/{id}/grades', [SubmissionReviewController::class, 'studentGradesDetail'])->name('v1.submissions.student.grades');
         });
 
- feat/ENG-ATT-controller
         // ── Engagements (ENG-3, ENG-4) ─────────────────
         Route::get('/engagements', [EngagementController::class, 'index'])
             ->name('v1.engagements.index');
@@ -125,11 +126,15 @@ Route::prefix('v1')
         // ── Announcements ────────────────────────────────
         Route::post('/announcements', [AnnouncementController::class, 'store'])
             ->name('v1.announcements.store');
-release
 
-        // — Billing
+        // ── Attendance ───────────────────────────────────
+        Route::get('/students/{id}/attendance', [AttendanceController::class, 'studentAttendance'])
+            ->name('v1.students.attendance');
+
+        // ── Billing ───────────────────────────────────────
         Route::prefix('billing')->group(function (): void {
-            // TODO: BillingController CRUD routes
+            Route::get('/branch', [BillingController::class, 'branchBilling'])
+                ->name('v1.billing.branch');
         });
 
     });
