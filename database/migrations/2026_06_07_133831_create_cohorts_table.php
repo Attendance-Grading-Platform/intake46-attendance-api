@@ -14,7 +14,7 @@ return new class extends Migration
             $table->foreignId('track_id')
                   ->constrained()
                   ->cascadeOnDelete();
-            $table->string('name'); 
+            $table->string('name');
             $table->enum('status', ['active', 'closed'])->default('active');
             $table->date('started_at');
             $table->date('ended_at')->nullable();
