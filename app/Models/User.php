@@ -110,7 +110,7 @@ class User extends Authenticatable
     public function enrolledCohorts(): BelongsToMany
     {
         return $this->belongsToMany(Cohort::class, 'cohort_students')
-                    ->withPivot('enrolled_at');
+            ->withPivot('enrolled_at');
     }
 
     /**

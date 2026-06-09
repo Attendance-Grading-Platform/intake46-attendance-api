@@ -14,6 +14,7 @@ use App\Http\Controllers\API\Instructor\SubmissionReviewController;
 use App\Http\Controllers\Api\V1\AnnouncementController;
 use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\BillingController;
+use App\Http\Controllers\Api\V1\ExcuseRequestController;
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\CheckAccountExpiry;
@@ -135,6 +136,20 @@ Route::prefix('v1')
         Route::prefix('billing')->group(function (): void {
             Route::get('/branch', [BillingController::class, 'branchBilling'])
                 ->name('v1.billing.branch');
+        });
+
+        // excuse requests workflow (EXC-1, EXC-3, ATT-5)
+        Route::prefix('excuse-requests')->group(function (): void {
+            Route::get('/', [ExcuseRequestController::class, 'index'])
+                ->name('v1.excuse-requests.index');
+            Route::post('/', [ExcuseRequestController::class, 'store'])
+                ->name('v1.excuse-requests.store');
+            Route::get('/{excuse}', [ExcuseRequestController::class, 'show'])
+                ->name('v1.excuse-requests.show');
+            Route::patch('/{excuse}', [ExcuseRequestController::class, 'review'])
+                ->name('v1.excuse-requests.review');
+            Route::delete('/{excuse}', [ExcuseRequestController::class, 'destroy'])
+                ->name('v1.excuse-requests.destroy');
         });
 
     });
