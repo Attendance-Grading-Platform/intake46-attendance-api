@@ -35,7 +35,8 @@ class CourseController extends Controller
      */
     public function store(Request $request, Cohort $cohort): JsonResponse
     {
-        $this->authorize('manage', Course::class);
+        // Matches CoursePolicy@create
+        $this->authorize('create', Course::class);
 
         $validated = $request->validate([
             'name' => [
@@ -56,7 +57,8 @@ class CourseController extends Controller
      */
     public function update(Request $request, Course $course): JsonResponse
     {
-        $this->authorize('manage', Course::class);
+        // Matches CoursePolicy@update and passes context
+        $this->authorize('update', $course);
 
         $validated = $request->validate([
             'name' => [
@@ -77,7 +79,8 @@ class CourseController extends Controller
      */
     public function storeComponent(Request $request, Course $course): JsonResponse
     {
-        $this->authorize('manage', Course::class);
+        // Adding a component is modifying the course
+        $this->authorize('update', $course);
 
         $validated = $request->validate([
             'type'     => 'required|in:lab_deliverable,final_exam',
@@ -103,7 +106,8 @@ class CourseController extends Controller
      */
     public function updateComponent(Request $request, CourseComponent $component): JsonResponse
     {
-        $this->authorize('manage', Course::class);
+        // Modifying a component requires update rights on the parent course
+        $this->authorize('update', $component->course);
 
         $validated = $request->validate([
             'type'     => 'sometimes|required|in:lab_deliverable,final_exam',
@@ -114,7 +118,7 @@ class CourseController extends Controller
         if (isset($validated['weight'])) {
             $course = $component->course;
             $otherWeights = $course->components()->where('id', '!=', $component->id)->sum('weight');
-            
+
             if (round((float)$otherWeights + (float)$validated['weight'], 2) > 100) {
                 throw ValidationException::withMessages([
                     'weight' => "Total component weight exceeds 100 (Other components: {$otherWeights}).",

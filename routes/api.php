@@ -55,6 +55,7 @@ Route::prefix('v1')
         Route::get('/tracks/{track}/cohorts', [CohortController::class, 'trackCohorts'])
             ->name('v1.tracks.cohorts');
         Route::delete('/tracks/{track}', [TrackController::class, 'destroy'])
+            ->middleware('role:branch_manager')
             ->name('v1.tracks.destroy');
 
         // ── Cohorts (LC-2) ───────────────────────────────
