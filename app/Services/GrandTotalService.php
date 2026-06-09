@@ -5,30 +5,43 @@ namespace App\Services;
 class GrandTotalService
 {
     /**
-     * Calculate the final cumulative grand total weight across all track courses.
+     * Calculate the final cumulative grand total weight based strictly on
+     * the ERD's COURSE_COMPONENTS weight system.
+     * * @param \Illuminate\Database\Eloquent\Collection $grades
+     * @return float
      */
-    public function calculateGrandTotal(array $courses): float
+    public function calculateGrandTotal($grades): float
     {
         $totalEarnedPoints = 0.0;
-        $totalCredits = 0.0;
+        $totalWeightPossible = 0.0;
 
-        foreach ($courses as $course) {
-            // Edge Case: law el-grade lsa b null (matsaglesh), bna3mel skip 3ashan mazlamsh el-talib
-            if (is_null($course['normalized_score'])) {
+        foreach ($grades as $grade) {
+            // Guard clause: Skip if the grade hasn't been evaluated yet
+            if (is_null($grade->raw_score)) {
                 continue;
             }
 
-            // Earned points = score * course credit hours
-            $totalEarnedPoints += ($course['normalized_score'] * $course['credits']);
-            $totalCredits += $course['credits'];
+            // Extract values strictly defined in the ERD
+            $rawScore = (float) $grade->raw_score;
+            $rawMax = (float) ($grade->raw_max ?? 100.0);
+
+            // Get the weight from the associated course component
+            $componentWeight = (float) ($grade->courseComponent->weight ?? 0.0);
+
+            if ($rawMax > 0) {
+                // Calculate how many weighted points the student earned
+                $percentageEarned = $rawScore / $rawMax;
+                $totalEarnedPoints += ($percentageEarned * $componentWeight);
+                $totalWeightPossible += $componentWeight;
+            }
         }
 
-        // law el-talib lsa malosh wala daraga fi ay mada, bnrga3 0.0 safely
-        if ($totalCredits === 0.0) {
+        // If no components have weight yet, return 0 safely
+        if ($totalWeightPossible === 0.0) {
             return 0.0;
         }
 
-        // Weighted Average Formula: (Score1*C1 + Score2*C2) / Total Credits
-        return round($totalEarnedPoints / $totalCredits, 2);
+        // Returns the actual points earned out of the total weight
+        return round($totalEarnedPoints, 2);
     }
 }

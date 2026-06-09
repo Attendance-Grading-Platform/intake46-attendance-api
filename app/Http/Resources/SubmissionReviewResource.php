@@ -13,20 +13,31 @@ class SubmissionReviewResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'score' => $this->score,
-            'feedback' => $this->feedback,
-            'status' => $this->status,
-            'submitted_at' => $this->created_at?->toIso8601String(),
+            'id'                  => $this->id,
+            'submission_url'      => $this->submission_url,
+            'file_path'           => $this->file_path,
+            'status'              => $this->status,
+            'penalty_days'        => $this->penalty_days,
+            'submitted_at'        => $this->submitted_at?->toIso8601String(),
             'student' => [
-                'id' => $this->student?->id,
-                'name' => $this->student?->name,
+                'id'    => $this->student?->id,
+                'name'  => $this->student?->name,
                 'email' => $this->student?->email,
             ],
+            'course_component' => [
+                'id'   => $this->courseComponent?->id,
+                'type' => $this->courseComponent?->type,
+            ],
             'course' => [
-                'id' => $this->course?->id,
+                'id'   => $this->course?->id,
                 'name' => $this->course?->name,
             ],
+            'grade' => $this->whenLoaded('grade', function () {
+                return [
+                    'raw_score' => $this->grade->raw_score,
+                    'raw_max'   => $this->grade->raw_max,
+                ];
+            }),
         ];
     }
 }
