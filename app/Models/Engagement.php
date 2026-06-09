@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
@@ -22,7 +23,6 @@ class Engagement extends Model
     use HasFactory;
 
     protected $fillable = [
-        'cohort_id',
         'instructor_id',
         'type',
         'start_date',
@@ -36,9 +36,9 @@ class Engagement extends Model
         'scheduled_hours' => 'integer',
     ];
 
-    /* ──────────────────────────────────────────────
-     |  Scopes
-     |──────────────────────────────────────────────*/
+/* ──────────────────────────────────────────────
+    |  Scopes
+    |──────────────────────────────────────────────*/
 
     /**
      * Engagements whose active window includes the current date.
@@ -49,7 +49,7 @@ class Engagement extends Model
         $today = now()->toDateString();
 
         return $query->where('start_date', '<=', $today)
-                     ->where('end_date', '>=', $today);
+                    ->where('end_date', '>=', $today);
     }
 
     /**
@@ -60,13 +60,17 @@ class Engagement extends Model
         return $query->where('type', $type);
     }
 
-    /* ──────────────────────────────────────────────
-     |  Relationships
-     |──────────────────────────────────────────────*/
+/* ──────────────────────────────────────────────
+    |  Relationships
+    |──────────────────────────────────────────────*/
 
-    public function cohort(): BelongsTo
+    /**
+     * The cohorts attending this engagement (ENG-3 / ERD Compliance).
+     * Pivot: engagement_cohorts
+     */
+    public function cohorts(): BelongsToMany
     {
-        return $this->belongsTo(Cohort::class);
+        return $this->belongsToMany(Cohort::class, 'engagement_cohorts');
     }
 
     public function instructor(): BelongsTo
@@ -87,9 +91,9 @@ class Engagement extends Model
         return $this->hasManyThrough(AttendanceRecord::class, EngagementSession::class);
     }
 
-    /* ──────────────────────────────────────────────
-     |  Helpers
-     |──────────────────────────────────────────────*/
+/* ──────────────────────────────────────────────
+    |  Helpers
+    |──────────────────────────────────────────────*/
 
     /**
      * Total delivered hours for billing (BIL-1).
@@ -98,7 +102,7 @@ class Engagement extends Model
     public function deliveredHours(): int
     {
         return (int) $this->sessions()
-                          ->where('delivered', true)
-                          ->count() * $this->scheduled_hours;
+                        ->where('delivered', true)
+                        ->count() * $this->scheduled_hours;
     }
 }
