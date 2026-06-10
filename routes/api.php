@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\V1\StudentTagController;
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\CheckAccountExpiry;
+use App\Http\Middleware\CheckEngagementWindow;
 
 /*
 |--------------------------------------------------------------------------
@@ -53,7 +54,7 @@ Route::prefix('auth')->middleware('throttle:5,1')->group(function () {
 // 2. Protected — Versioned API (v1)
 // ──────────────────────────────────────────────────────────
 Route::prefix('v1')
-    ->middleware(['auth:sanctum', \App\Http\Middleware\CheckAccountExpiry::class])
+    ->middleware(['auth:sanctum', CheckAccountExpiry::class])
     ->group(function (): void {
 
         // ── Auth & User Management ───────────────────
@@ -70,7 +71,7 @@ Route::prefix('v1')
         Route::get('/cohorts/{cohort}/students', [CohortController::class, 'students'])->name('v1.cohorts.students');
 
         // ── Engagement-Restricted Core ────────────────
-        Route::middleware([\App\Http\Middleware\CheckEngagementWindow::class])->group(function (): void {
+        Route::middleware([CheckEngagementWindow::class])->group(function (): void {
             
             Route::prefix('auth')->group(function (): void {
                 // User management endpoints (CRUDS) still restricted
@@ -172,6 +173,21 @@ Route::prefix('v1')
             Route::post('/rollup/generate', [BillingController::class, 'generate'])->name('v1.billing.generate');
             Route::get('/instructors/{id}', [BillingController::class, 'instructorBilling'])->name('v1.billing.instructor');
         });
+
+        // ── Engagements (ENG-3, ENG-4) ─────────────────
+        Route::get('/engagements', [EngagementController::class, 'index'])->name('v1.engagements.index');
+        Route::post('/engagements', [EngagementController::class, 'store'])->name('v1.engagements.store');
+        Route::get('/engagements/{engagement}', [EngagementController::class, 'show'])->name('v1.engagements.show');
+
+        // ── Sessions (ENG-4: delivered flag) ────────────
+        Route::patch('/sessions/{session}', [SessionController::class, 'update'])->name('v1.sessions.update');
+
+        // ── Announcements ────────────────────────────────
+        Route::post('/announcements', [AnnouncementController::class, 'store'])->name('v1.announcements.store');
+
+        // ── Attendance (ATT-1, ATT-4) ────────────────────
+        Route::post('/attendance/scan', [AttendanceController::class, 'scan'])->name('v1.attendance.scan');
+        Route::get('/students/{id}/attendance', [AttendanceController::class, 'studentAttendance'])->name('v1.students.attendance');
 
         // ── Analytics ────────────────────────────────
         Route::prefix('analytics')->group(function (): void {

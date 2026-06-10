@@ -7,27 +7,29 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * ATT-4: Every student's ledger starts at 250 points.
-     * ATT-6: One single ledger per student spanning the whole program.
+     * Run the migrations.
      */
     public function up(): void
     {
-        Schema::create('attendance_ledgers', function (Blueprint $table) {
+        Schema::create('engagement_cohorts', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('student_id')
-                  ->unique()               // One ledger per student
-                  ->constrained('users')
+            $table->foreignId('engagement_id')
+                  ->constrained()
                   ->cascadeOnDelete();
             $table->foreignId('cohort_id')
                   ->constrained('cohorts')
                   ->cascadeOnDelete();
-            $table->integer('balance')->default(250);
             $table->timestamps();
+            $table->unique(['engagement_id', 'cohort_id']);
         });
+
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
-        Schema::dropIfExists('attendance_ledgers');
+        Schema::dropIfExists('engagement_cohorts');
     }
 };

@@ -3,20 +3,60 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\AttendanceLedger;
+use App\Http\Requests\StoreAttendanceRequest;
 use App\Models\AttendanceRecord;
 use App\Models\EngagementSession;
 use App\Models\User;
+use App\Services\AttendanceService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+/**
+ * AttendanceController — Manages the QR-scan attendance flow and
+ * student attendance retrieval within the V1 API surface.
+ *
+ * Architecture:
+ *  - Skinny controller pattern: all point deductions, ledger mutations,
+ *    and risk-flag logic live in the injected AttendanceService.
+ *  - Authorization is split between the StoreAttendanceRequest (which
+ *    delegates to AttendanceRecordPolicy@create) and inline Policy
+ *    checks for read operations.
+ *
+ * @see ATT-1: QR scan-in / scan-out
+ * @see ATT-4: Ledger balance retrieval
+ * @see AttendanceRecordPolicy
+ */
 class AttendanceController extends Controller
 {
     use ApiResponse;
 
-    // get student attendance records
-    // GET /api/v1/students/{id}/attendance  or  GET /api/v1/me/attendance
+    public function __construct(
+        private readonly AttendanceService $attendanceService,
+    ) {}
+
+    /**
+     * Record attendance from a QR scan event.
+     *
+     * POST /api/v1/attendance/scan
+     */
+    public function scan(StoreAttendanceRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+
+        $record = $this->attendanceService->processScan(
+            sessionId: (int) $validated['session_id'],
+            studentId: (int) $validated['student_id'],
+            trackId:   (int) $validated['track_id'],
+            scannedBy: $request->user(),
+        );
+
+        return $this->successResponse($record, 'Attendance recorded successfully.', 201);
+    }
+
+    /**
+     * Retrieve a student's attendance records and ledger balance.
+     */
     public function studentAttendance(Request $request, $id = null): JsonResponse
     {
         // if id is null, use the logged in user id
@@ -40,11 +80,11 @@ class AttendanceController extends Controller
         }
 
         $data = [
-            'student_id' => $student->id,
-            'student_name' => $student->name,
+            'student_id'     => $student->id,
+            'student_name'   => $student->name,
             'ledger_balance' => $balance,
-            'is_at_risk' => $isAtRisk,
-            'records' => $records,
+            'is_at_risk'     => $isAtRisk,
+            'records'        => $records,
         ];
 
         return $this->successResponse($data, 'Student attendance retrieved successfully.');
@@ -104,13 +144,13 @@ class AttendanceController extends Controller
             return $this->errorResponse('You cannot view this session attendance.', 403);
         }
 
-        $records = AttendanceRecord::where('session_id', $session->id)
+        $records = AttendanceRecord::where('session_id', $session->getKey())
             ->with('student:id,name,email')
             ->orderBy('arrived_at')
             ->get();
 
         $data = [
-            'session_id' => $session->id,
+            'session_id' => $session->getKey(),
             'session_date' => $session->session_date,
             'records' => $records,
         ];
@@ -138,14 +178,14 @@ class AttendanceController extends Controller
         foreach ($validated['student_ids'] as $studentId) {
             // check if record already exists
             $existing = AttendanceRecord::where('student_id', $studentId)
-                ->where('session_id', $session->id)
+                ->where('session_id', $session->getKey())
                 ->first();
 
             if (!$existing) {
                 // create absent record - observer will deduct 25 from ledger
                 AttendanceRecord::create([
                     'student_id' => $studentId,
-                    'session_id' => $session->id,
+                    'session_id' => $session->getKey(),
                     'arrived_at' => null,
                     'left_at' => null,
                 ]);
@@ -156,3 +196,4 @@ class AttendanceController extends Controller
         return $this->successResponse(['marked_absent_count' => $count], $count . ' student(s) marked as absent.');
     }
 }
+    

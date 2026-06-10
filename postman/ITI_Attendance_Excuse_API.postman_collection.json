@@ -1,0 +1,765 @@
+{
+	"info": {
+		"name": "ITI Attendance & Excuse Requests API",
+		"description": "Attendance QR Scanning & Excuse Request Workflow.\n\n**Setup:**\n1. Run \"Login as Track Admin\" first to get a token.\n2. Token auto-saves to `token` variable.\n3. Use the login helpers to switch roles (student, track_admin, etc.).\n4. IDs in requests use collection variables — update after first run.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{ "key": "baseUrl", "value": "http://localhost:8000/api", "type": "string" },
+		{ "key": "token", "value": "", "type": "string" },
+		{ "key": "studentId", "value": "2", "type": "string" },
+		{ "key": "sessionId", "value": "1", "type": "string" },
+		{ "key": "trackId", "value": "1", "type": "string" },
+		{ "key": "excuseId", "value": "1", "type": "string" }
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+	},
+	"item": [
+		{
+			"name": "Auth Helpers",
+			"item": [
+				{
+					"name": "Login as Track Admin",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"exec": [
+								"const res = pm.response.json();",
+								"if (res.data && res.data.token) {",
+								"    pm.collectionVariables.set('token', res.data.token);",
+								"    console.log('✅ Track Admin token saved');",
+								"}",
+								"pm.test('Login successful', function () {",
+								"    pm.response.to.have.status(200);",
+								"    pm.expect(res.status).to.eql('success');",
+								"});"
+							],
+							"type": "text/javascript"
+						}
+					}],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"track-admin@iti.test\",\n  \"password\": \"password\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "login"]
+						}
+					}
+				},
+				{
+					"name": "Login as Student",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"exec": [
+								"const res = pm.response.json();",
+								"if (res.data && res.data.token) {",
+								"    pm.collectionVariables.set('token', res.data.token);",
+								"    console.log('✅ Student token saved');",
+								"}",
+								"pm.test('Login successful', function () {",
+								"    pm.response.to.have.status(200);",
+								"});"
+							],
+							"type": "text/javascript"
+						}
+					}],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"student@iti.test\",\n  \"password\": \"password\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "login"]
+						}
+					}
+				},
+				{
+					"name": "Login as Instructor",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"exec": [
+								"const res = pm.response.json();",
+								"if (res.data && res.data.token) {",
+								"    pm.collectionVariables.set('token', res.data.token);",
+								"    console.log('✅ Instructor token saved');",
+								"}",
+								"pm.test('Login successful', function () {",
+								"    pm.response.to.have.status(200);",
+								"});"
+							],
+							"type": "text/javascript"
+						}
+					}],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"lab-instructor@iti.test\",\n  \"password\": \"password\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "login"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Attendance — QR Scan",
+			"item": [
+				{
+					"name": "Scan Attendance (Happy Path)",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"exec": [
+								"const res = pm.response.json();",
+								"pm.test('Attendance recorded with 201', function () {",
+								"    pm.response.to.have.status(201);",
+								"    pm.expect(res.status).to.eql('success');",
+								"});",
+								"pm.test('Record contains expected fields', function () {",
+								"    pm.expect(res.data).to.have.property('session_id');",
+								"    pm.expect(res.data).to.have.property('student_id');",
+								"    pm.expect(res.data).to.have.property('track_id');",
+								"    pm.expect(res.data).to.have.property('status');",
+								"    pm.expect(res.data).to.have.property('arrived_at');",
+								"});"
+							],
+							"type": "text/javascript"
+						}
+					}],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"session_id\": {{sessionId}},\n  \"student_id\": {{studentId}},\n  \"track_id\": {{trackId}}\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/attendance/scan",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "attendance", "scan"]
+						}
+					}
+				},
+				{
+					"name": "Scan Attendance — Validation Error (missing fields)",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"exec": [
+								"pm.test('Returns 422 with validation errors', function () {",
+								"    pm.response.to.have.status(422);",
+								"    const res = pm.response.json();",
+								"    pm.expect(res).to.have.property('errors');",
+								"});"
+							],
+							"type": "text/javascript"
+						}
+					}],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"session_id\": 9999\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/attendance/scan",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "attendance", "scan"]
+						}
+					}
+				},
+				{
+					"name": "Scan Attendance — Duplicate (same student+session)",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"exec": [
+								"pm.test('Returns 422 for duplicate scan', function () {",
+								"    pm.response.to.have.status(422);",
+								"});"
+							],
+							"type": "text/javascript"
+						}
+					}],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"session_id\": {{sessionId}},\n  \"student_id\": {{studentId}},\n  \"track_id\": {{trackId}}\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/attendance/scan",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "attendance", "scan"]
+						}
+					}
+				},
+				{
+					"name": "Scan Attendance — Forbidden (student role)",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"exec": [
+								"pm.test('Returns 403 — students cannot scan via API', function () {",
+								"    pm.response.to.have.status(403);",
+								"});"
+							],
+							"type": "text/javascript"
+						}
+					}],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"session_id\": {{sessionId}},\n  \"student_id\": {{studentId}},\n  \"track_id\": {{trackId}}\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/attendance/scan",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "attendance", "scan"]
+						},
+						"description": "⚠️ Run 'Login as Student' first to test this — should return 403."
+					}
+				},
+				{
+					"name": "Get Student Attendance",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"exec": [
+								"const res = pm.response.json();",
+								"pm.test('Returns 200 with attendance data', function () {",
+								"    pm.response.to.have.status(200);",
+								"    pm.expect(res.status).to.eql('success');",
+								"});",
+								"pm.test('Contains ledger and records', function () {",
+								"    pm.expect(res.data).to.have.property('ledger_balance');",
+								"    pm.expect(res.data).to.have.property('is_at_risk');",
+								"    pm.expect(res.data).to.have.property('records');",
+								"});"
+							],
+							"type": "text/javascript"
+						}
+					}],
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/students/{{studentId}}/attendance",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "students", "{{studentId}}", "attendance"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Excuse Requests — Student Flow",
+			"item": [
+				{
+					"name": "Submit Excuse (Happy Path)",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"exec": [
+								"const res = pm.response.json();",
+								"pm.test('Excuse created with 201', function () {",
+								"    pm.response.to.have.status(201);",
+								"    pm.expect(res.status).to.eql('success');",
+								"});",
+								"pm.test('Status is requested', function () {",
+								"    pm.expect(res.data).to.have.property('status');",
+								"    pm.expect(res.data.status).to.eql('requested');",
+								"});",
+								"if (res.data && res.data.id) {",
+								"    pm.collectionVariables.set('excuseId', res.data.id);",
+								"    console.log('✅ Excuse ID saved:', res.data.id);",
+								"}"
+							],
+							"type": "text/javascript"
+						}
+					}],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"session_id\": {{sessionId}},\n  \"reason\": \"I was sick and had a doctor appointment. Attaching medical certificate.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/excuse-requests",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "excuse-requests"]
+						},
+						"description": "⚠️ Run 'Login as Student' first."
+					}
+				},
+				{
+					"name": "Submit Excuse — With Attachment",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"exec": [
+								"const res = pm.response.json();",
+								"pm.test('Excuse created with attachment', function () {",
+								"    pm.response.to.have.status(201);",
+								"    pm.expect(res.data).to.have.property('status');",
+								"});",
+								"if (res.data && res.data.id) {",
+								"    pm.collectionVariables.set('excuseId', res.data.id);",
+								"}"
+							],
+							"type": "text/javascript"
+						}
+					}],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" }
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{ "key": "session_id", "value": "{{sessionId}}", "type": "text" },
+								{ "key": "reason", "value": "Medical emergency — see attached report.", "type": "text" },
+								{ "key": "attachment", "type": "file", "src": "", "description": "Select a PDF or image file (max 1MB)" }
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/excuse-requests",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "excuse-requests"]
+						},
+						"description": "⚠️ Login as Student first. Select a file for the attachment field."
+					}
+				},
+				{
+					"name": "Submit Excuse — Duplicate (same session)",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"exec": [
+								"pm.test('Returns 422 for duplicate excuse', function () {",
+								"    pm.response.to.have.status(422);",
+								"});"
+							],
+							"type": "text/javascript"
+						}
+					}],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"session_id\": {{sessionId}},\n  \"reason\": \"Trying to submit again for the same session.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/excuse-requests",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "excuse-requests"]
+						},
+						"description": "Should fail — student already has an excuse for this session."
+					}
+				},
+				{
+					"name": "Submit Excuse — Validation Error",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"exec": [
+								"pm.test('Returns 422 with validation errors', function () {",
+								"    pm.response.to.have.status(422);",
+								"    pm.expect(pm.response.json()).to.have.property('errors');",
+								"});"
+							],
+							"type": "text/javascript"
+						}
+					}],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"session_id\": 9999\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/excuse-requests",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "excuse-requests"]
+						}
+					}
+				},
+				{
+					"name": "Submit Excuse — Forbidden (non-student)",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"exec": [
+								"pm.test('Returns 403 — only students can submit', function () {",
+								"    pm.response.to.have.status(403);",
+								"});"
+							],
+							"type": "text/javascript"
+						}
+					}],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"session_id\": {{sessionId}},\n  \"reason\": \"Admin trying to submit an excuse.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/excuse-requests",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "excuse-requests"]
+						},
+						"description": "⚠️ Run 'Login as Track Admin' first — should return 403."
+					}
+				},
+				{
+					"name": "List My Excuse Requests",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"exec": [
+								"const res = pm.response.json();",
+								"pm.test('Returns 200 with excuse list', function () {",
+								"    pm.response.to.have.status(200);",
+								"    pm.expect(res.status).to.eql('success');",
+								"    pm.expect(res.data).to.be.an('array');",
+								"});"
+							],
+							"type": "text/javascript"
+						}
+					}],
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/excuse-requests",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "excuse-requests"]
+						}
+					}
+				},
+				{
+					"name": "Show Excuse Request",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"exec": [
+								"const res = pm.response.json();",
+								"pm.test('Returns 200 with excuse details', function () {",
+								"    pm.response.to.have.status(200);",
+								"    pm.expect(res.data).to.have.property('student');",
+								"    pm.expect(res.data).to.have.property('session');",
+								"    pm.expect(res.data).to.have.property('status');",
+								"});"
+							],
+							"type": "text/javascript"
+						}
+					}],
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/excuse-requests/{{excuseId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "excuse-requests", "{{excuseId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Excuse Requests — Admin Review",
+			"item": [
+				{
+					"name": "List Cohort Excuse Requests (Admin)",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"exec": [
+								"const res = pm.response.json();",
+								"pm.test('Returns 200 with cohort-scoped excuses', function () {",
+								"    pm.response.to.have.status(200);",
+								"    pm.expect(res.data).to.be.an('array');",
+								"});"
+							],
+							"type": "text/javascript"
+						}
+					}],
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/excuse-requests",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "excuse-requests"]
+						},
+						"description": "⚠️ Run 'Login as Track Admin' first."
+					}
+				},
+				{
+					"name": "Approve Excuse Request",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"exec": [
+								"const res = pm.response.json();",
+								"pm.test('Excuse approved with 200', function () {",
+								"    pm.response.to.have.status(200);",
+								"    pm.expect(res.status).to.eql('success');",
+								"});",
+								"pm.test('Status changed to approved', function () {",
+								"    pm.expect(res.data.status).to.eql('approved');",
+								"    pm.expect(res.data).to.have.property('reviewed_at');",
+								"    pm.expect(res.data.reviewer).to.not.be.null;",
+								"});"
+							],
+							"type": "text/javascript"
+						}
+					}],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"approved\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/excuse-requests/{{excuseId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "excuse-requests", "{{excuseId}}"]
+						},
+						"description": "⚠️ Login as Track Admin first."
+					}
+				},
+				{
+					"name": "Reject Excuse Request",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"exec": [
+								"const res = pm.response.json();",
+								"pm.test('Excuse rejected with 200', function () {",
+								"    pm.response.to.have.status(200);",
+								"});",
+								"pm.test('Status changed to rejected', function () {",
+								"    pm.expect(res.data.status).to.eql('rejected');",
+								"});"
+							],
+							"type": "text/javascript"
+						}
+					}],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"rejected\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/excuse-requests/{{excuseId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "excuse-requests", "{{excuseId}}"]
+						},
+						"description": "Use a different excuseId than the approved one."
+					}
+				},
+				{
+					"name": "Review Excuse — Already Reviewed",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"exec": [
+								"pm.test('Returns 422 — already reviewed', function () {",
+								"    pm.response.to.have.status(422);",
+								"});"
+							],
+							"type": "text/javascript"
+						}
+					}],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"approved\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/excuse-requests/{{excuseId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "excuse-requests", "{{excuseId}}"]
+						},
+						"description": "Run after approving — should fail because excuse is no longer pending."
+					}
+				},
+				{
+					"name": "Review Excuse — Invalid Status Value",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"exec": [
+								"pm.test('Returns 422 for invalid status', function () {",
+								"    pm.response.to.have.status(422);",
+								"    pm.expect(pm.response.json()).to.have.property('errors');",
+								"});"
+							],
+							"type": "text/javascript"
+						}
+					}],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"maybe\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/excuse-requests/{{excuseId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "excuse-requests", "{{excuseId}}"]
+						}
+					}
+				},
+				{
+					"name": "Review Excuse — Forbidden (student role)",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"exec": [
+								"pm.test('Returns 403 — students cannot review', function () {",
+								"    pm.response.to.have.status(403);",
+								"});"
+							],
+							"type": "text/javascript"
+						}
+					}],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"approved\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/excuse-requests/{{excuseId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "excuse-requests", "{{excuseId}}"]
+						},
+						"description": "⚠️ Login as Student first — should return 403."
+					}
+				},
+				{
+					"name": "Delete Excuse Request (Branch Manager)",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"exec": [
+								"pm.test('Excuse deleted with 200', function () {",
+								"    pm.response.to.have.status(200);",
+								"    pm.expect(pm.response.json().status).to.eql('success');",
+								"});"
+							],
+							"type": "text/javascript"
+						}
+					}],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{ "key": "Accept", "value": "application/json" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/excuse-requests/{{excuseId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "excuse-requests", "{{excuseId}}"]
+						},
+						"description": "⚠️ Requires Branch Manager token."
+					}
+				}
+			]
+		}
+	]
+}
