@@ -40,13 +40,16 @@ class EngagementService
 
             // ── 1. Create the Engagement record ──────────────
             $engagement = Engagement::create([
-                'cohort_id'       => $data['cohort_id'],
                 'instructor_id'   => $data['instructor_id'],
                 'type'            => $data['type'],
                 'start_date'      => $data['start_date'],
                 'end_date'        => $data['end_date'],
                 'scheduled_hours' => $data['scheduled_hours'],
             ]);
+
+            if (isset($data['cohort_id'])) {
+                $engagement->cohorts()->attach($data['cohort_id']);
+            }
 
             // ── 2. Auto-set instructor expiry_date ───────────
             // Extend the instructor's account expiry to cover the engagement.
@@ -63,7 +66,7 @@ class EngagementService
             $sessions = $this->generateSessions($engagement, $daysOfWeek);
 
             // Eager-load relationships for the API response
-            $engagement->load(['instructor:id,name,email', 'cohort:id,name']);
+            $engagement->load(['instructor:id,name,email', 'cohorts']);
 
             return [
                 'engagement' => $engagement,

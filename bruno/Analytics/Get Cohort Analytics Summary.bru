@@ -1,0 +1,15 @@
+meta {
+  name: Get Cohort Analytics Summary
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/v1/cohorts/1/analytics
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}

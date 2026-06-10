@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('match_erd', function (Blueprint $table) {
-            //
+        Schema::table('engagements', function (Blueprint $table) {
+            $table->json('days_of_week')->nullable()->after('scheduled_hours');
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('match_erd', function (Blueprint $table) {
-            //
+        Schema::table('engagements', function (Blueprint $table) {
+            $table->dropColumn('days_of_week'); // <-- Add this
         });
     }
 };

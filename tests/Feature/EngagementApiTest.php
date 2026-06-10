@@ -34,6 +34,7 @@ class EngagementApiTest extends TestCase
 
     private User   $instructor;
     private User   $student;
+    private User   $trackAdmin;
     private Cohort $cohort;
 
     /**
@@ -72,14 +73,25 @@ class EngagementApiTest extends TestCase
             'is_active'   => true,
             'expiry_date' => now()->addYear(),
         ]);
+
+        $this->trackAdmin = User::create([
+            'name'        => 'Test Track Admin',
+            'email'       => 'admin@test.com',
+            'password'    => bcrypt('password'),
+            'role'        => 'track_admin',
+            'is_active'   => true,
+            'expiry_date' => now()->addYear(),
+        ]);
+        
+        $this->cohort->trackAdmins()->attach($this->trackAdmin->id);
     }
 
     /**
-     * Authenticate as the instructor and return Sanctum headers.
+     * Authenticate as the track admin and return Sanctum headers.
      */
     private function authHeaders(): array
     {
-        $token = $this->instructor->createToken('test')->plainTextToken;
+        $token = $this->trackAdmin->createToken('test')->plainTextToken;
         return [
             'Authorization' => "Bearer {$token}",
             'Accept'        => 'application/json',
@@ -114,13 +126,13 @@ class EngagementApiTest extends TestCase
             $this->authHeaders(),
         );
 
-        $response->assertStatus(201)
+        $response->assertStatus(201)->dump()
                  ->assertJsonPath('status', 'success')
                  ->assertJsonStructure([
                      'status',
                      'message',
                      'data' => [
-                         'engagement' => ['id', 'cohort_id', 'instructor_id', 'type', 'start_date', 'end_date', 'scheduled_hours'],
+                         'engagement' => ['id', 'instructor_id', 'type', 'start_date', 'end_date', 'scheduled_hours', 'cohort', 'cohorts'],
                          'sessions',
                          'sessions_count',
                      ],
@@ -128,9 +140,15 @@ class EngagementApiTest extends TestCase
 
         // Verify DB records exist
         $this->assertDatabaseHas('engagements', [
-            'cohort_id'     => $this->cohort->id,
             'instructor_id' => $this->instructor->id,
             'type'          => 'lab',
+        ]);
+
+        $engagementId = $response->json('data.engagement.id');
+
+        $this->assertDatabaseHas('engagement_cohorts', [
+            'engagement_id' => $engagementId,
+            'cohort_id'     => $this->cohort->id,
         ]);
 
         // Verify at least 1 session was generated
@@ -148,7 +166,7 @@ class EngagementApiTest extends TestCase
         ]);
 
         $response = $this->postJson('/api/v1/engagements', $payload, $this->authHeaders());
-        $response->assertStatus(201);
+        $response->assertStatus(201)->dump();
 
         $sessions = collect($response->json('data.sessions'));
         $this->assertGreaterThan(0, $sessions->count());
@@ -165,7 +183,7 @@ class EngagementApiTest extends TestCase
     public function test_sessions_are_all_marked_as_not_delivered(): void
     {
         $response = $this->postJson('/api/v1/engagements', $this->validPayload(), $this->authHeaders());
-        $response->assertStatus(201);
+        $response->assertStatus(201)->dump();
 
         $sessions = collect($response->json('data.sessions'));
         $sessions->each(function (array $session) {
@@ -177,7 +195,7 @@ class EngagementApiTest extends TestCase
     {
         $response = $this->postJson('/api/v1/engagements', $this->validPayload(), $this->authHeaders());
 
-        $response->assertStatus(201)
+        $response->assertStatus(201)->dump()
                  ->assertJsonPath('data.engagement.instructor.email', 'instructor@test.com')
                  ->assertJsonPath('data.engagement.cohort.name', 'Test Cohort');
     }

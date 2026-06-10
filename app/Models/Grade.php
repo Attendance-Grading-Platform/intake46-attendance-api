@@ -15,9 +15,8 @@ class Grade extends Model
     protected $guarded = ['id'];
 
     protected $casts = [
-        'raw_score' => 'decimal:2',
-        'raw_max'   => 'decimal:2',
-        'weight'    => 'decimal:2',
+        'raw_score'        => 'decimal:2',
+        'raw_max'          => 'decimal:2',
         'normalized_score' => 'decimal:2',
     ];
 

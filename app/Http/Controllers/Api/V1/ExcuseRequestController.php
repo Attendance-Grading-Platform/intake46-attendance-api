@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceLedger;
+use App\Models\AttendanceRecord;
 use App\Models\ExcuseRequest;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -103,16 +104,36 @@ class ExcuseRequestController extends Controller
             'status' => 'required|in:approved,rejected',
         ]);
 
+        // CRIT-E1: Before crediting the ledger, confirm the student was actually
+        // marked absent for this session. convertToExcused() reverses a -25 deduction;
+        // calling it without a confirmed absence corrupts the ledger balance.
+        if ($validated['status'] === 'approved') {
+            $absenceRecord = AttendanceRecord::where('session_id', $excuse->session_id)
+                ->where('student_id', $excuse->student_id)
+                ->where('status', 'absent')
+                ->first();
+
+            if (!$absenceRecord) {
+                return $this->errorResponse(
+                    'Cannot approve: No absence record found for this session.',
+                    422
+                );
+            }
+        }
+
         DB::transaction(function () use ($excuse, $validated, $request) {
             if ($validated['status'] === 'approved') {
                 $ledger = AttendanceLedger::where('student_id', $excuse->student_id)->first();
 
                 if ($ledger) {
+                    // Reverse the -25 unexcused deduction and apply the -5 excused one (+20 net)
                     $ledger->convertToExcused();
                 } else {
+                    // Edge case: ledger was never created (e.g., scanner failure).
+                    // CRIT-E2: Use named constant; do NOT hardcode 245.
                     AttendanceLedger::create([
                         'student_id' => $excuse->student_id,
-                        'balance'    => 245,
+                        'balance'    => AttendanceLedger::INITIAL_BALANCE - 5,
                     ]);
                 }
             }

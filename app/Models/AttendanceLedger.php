@@ -18,6 +18,9 @@ class AttendanceLedger extends Model
 {
     use HasFactory;
 
+    /** ATT-4: Every student's ledger starts at 250 points. */
+    const INITIAL_BALANCE = 250;
+
     protected $fillable = [
         'student_id',
         'balance',

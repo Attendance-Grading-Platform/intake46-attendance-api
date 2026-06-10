@@ -1,0 +1,15 @@
+meta {
+  name: Get Profile
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/v1/auth/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: 3|Y6Y7SGBm82MdqN23D72n5q160EjiwREevPkwwg2c152e6e5d
+}
