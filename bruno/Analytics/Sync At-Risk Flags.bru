@@ -1,0 +1,15 @@
+meta {
+  name: Sync At-Risk Flags
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/v1/cohorts/1/analytics/sync
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}

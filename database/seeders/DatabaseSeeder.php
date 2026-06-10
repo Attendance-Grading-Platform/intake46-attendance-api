@@ -93,11 +93,14 @@ class DatabaseSeeder extends Seeder
         User::factory()->count(2)->instructor('external')->expired()->create();
 
         
-       // 3. Academic Structure (Branch, Track, Cohort, Courses)
+        // 3. Academic Structure (Branch, Track, Cohort, Courses)
         $this->call([
             AcademicStructureSeeder::class,
+            LabGroupSeeder::class,
             GradeSeeder::class,
             SubmissionSeeder::class,
+            EngagementSeeder::class,
+            AttendanceLedgerSeeder::class,
         ]);
     }
 }

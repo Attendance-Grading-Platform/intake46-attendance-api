@@ -121,4 +121,24 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(LabGroup::class, 'lab_group_instructors');
     }
+
+    /**
+     * Lab groups this user is enrolled in as a Student.
+     * Pivot: lab_group_students (lab_group_id, user_id)
+     */
+    public function enrolledLabGroups(): BelongsToMany
+    {
+        return $this->belongsToMany(LabGroup::class, 'lab_group_students');
+    }
+
+    /**
+     * Send the password reset notification.
+     *
+     * @param  string  $token
+     * @return void
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new \App\Notifications\ResetPasswordNotification($token));
+    }
 }

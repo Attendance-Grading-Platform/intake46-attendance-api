@@ -69,4 +69,9 @@ class Cohort extends Model
         return $this->belongsToMany(User::class, 'cohort_students')
                     ->withPivot('enrolled_at');
     }
+
+    public function labGroups(): HasMany
+    {
+        return $this->hasMany(LabGroup::class);
+    }
 }

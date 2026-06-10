@@ -15,6 +15,9 @@ use App\Http\Controllers\Api\V1\AnnouncementController;
 use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\BillingController;
 use App\Http\Controllers\Api\V1\ExcuseRequestController;
+use App\Http\Controllers\Api\V1\PasswordResetController;
+use App\Http\Controllers\Api\V1\LabGroupController;
+use App\Http\Controllers\Api\V1\AnalyticsController;
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\CheckAccountExpiry;
@@ -40,6 +43,8 @@ use App\Http\Middleware\CheckAccountExpiry;
 // Rate Limiting: max 5 attempts per minute
 Route::prefix('auth')->middleware('throttle:5,1')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->name('auth.login');
+    Route::post('/forgot-password', [PasswordResetController::class, 'forgotPassword'])->name('password.email');
+    Route::post('/reset-password', [PasswordResetController::class, 'resetPassword'])->name('password.reset');
 });
 
 // ──────────────────────────────────────────────────────────
@@ -51,6 +56,8 @@ Route::prefix('v1')
 
         // Auth actions that require an active session/token
         Route::prefix('auth')->group(function (): void {
+            Route::get('/me', [AuthController::class, 'me'])
+                ->name('v1.auth.me');
             Route::post('/logout', [AuthController::class, 'logout'])
                 ->name('v1.auth.logout');
         });
@@ -85,6 +92,22 @@ Route::prefix('v1')
             ->name('v1.cohorts.assign-admin');
         Route::delete('/cohorts/{cohort}', [CohortController::class, 'destroy'])
             ->name('v1.cohorts.destroy');
+
+        // ── Lab Groups (D2) ──────────────────────────────
+        Route::post('/cohorts/{cohort}/lab-groups', [LabGroupController::class, 'store'])
+            ->name('v1.lab-groups.store');
+        Route::get('/lab-groups/{labGroup}', [LabGroupController::class, 'show'])
+            ->name('v1.lab-groups.show');
+        Route::post('/lab-groups/{labGroup}/instructors', [LabGroupController::class, 'assignInstructors'])
+            ->name('v1.lab-groups.assign-instructors');
+        Route::post('/lab-groups/{labGroup}/students', [LabGroupController::class, 'assignStudents'])
+            ->name('v1.lab-groups.assign-students');
+
+        // ── Analytics & Rollups (ANL-1) ──────────────────
+        Route::get('/cohorts/{cohort}/analytics', [AnalyticsController::class, 'summary'])
+            ->name('v1.analytics.summary');
+        Route::post('/cohorts/{cohort}/analytics/sync', [AnalyticsController::class, 'sync'])
+            ->name('v1.analytics.sync');
 
         // ── Courses (D3) ─────────────────────────────────
         Route::get('/cohorts/{cohort}/courses', [CourseController::class, 'index'])

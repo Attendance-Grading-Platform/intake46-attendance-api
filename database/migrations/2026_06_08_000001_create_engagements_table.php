@@ -14,9 +14,6 @@ return new class extends Migration
     {
         Schema::create('engagements', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('cohort_id')
-                  ->constrained()
-                  ->cascadeOnDelete();
             $table->foreignId('instructor_id')
                   ->constrained('users')
                   ->cascadeOnDelete();
