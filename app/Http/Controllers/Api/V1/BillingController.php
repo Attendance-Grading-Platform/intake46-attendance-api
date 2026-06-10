@@ -76,10 +76,12 @@ class BillingController extends Controller
         $cohort = \App\Models\Cohort::findOrFail($validated['cohort_id']);
         $this->authorize('update', $cohort);
 
-        // Find all instructors associated with this cohort
+        // Find all instructors associated with this cohort via pivot
         $instructors = \App\Models\User::where('role', 'instructor')
             ->whereHas('engagements', function ($q) use ($cohort) {
-                $q->where('cohort_id', $cohort->id);
+                $q->whereHas('cohorts', function ($sq) use ($cohort) {
+                    $sq->where('cohorts.id', $cohort->id);
+                });
             })->get();
 
         $service = new \App\Services\BillingSnapshotService();
@@ -94,5 +96,48 @@ class BillingController extends Controller
             ['generated_count' => $count],
             "Created {$count} billing snapshots for cohort: {$cohort->name}."
         );
+    }
+
+    // get billing for one instructor
+    // GET /api/v1/billing/instructors/{id}
+    public function instructorBilling(Request $request, int $id): JsonResponse
+    {
+        $instructor = \App\Models\User::findOrFail($id);
+        $this->authorize('viewAny', BillingSnapshot::class);
+
+        $snapshots = BillingSnapshot::with(['cohort:id,name'])
+            ->where('person_id', $id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $totalHours = 0;
+        $totalAmount = 0;
+
+        foreach ($snapshots as $snapshot) {
+            $totalHours += $snapshot->delivered_hours;
+            $totalAmount += $snapshot->total_amount;
+        }
+
+        $compensationType = $instructor->compensation_type;
+        if ($compensationType == null) {
+            $compensationType = 'external';
+        }
+
+        $data = [
+            'instructor' => [
+                'id' => $instructor->id,
+                'name' => $instructor->name,
+                'compensation_type' => $compensationType,
+                'hourly_rate' => $instructor->hourly_rate,
+                'fixed_salary' => $instructor->fixed_salary,
+            ],
+            'summary' => [
+                'total_delivered_hours' => $totalHours,
+                'total_amount' => $totalAmount,
+            ],
+            'snapshots' => $snapshots,
+        ];
+
+        return $this->successResponse($data, 'Instructor billing retrieved successfully.');
     }
 }

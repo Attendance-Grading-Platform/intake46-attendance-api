@@ -14,10 +14,12 @@ class BillingSnapshotService
      */
     public function generate(User $instructor, Cohort $cohort, string $period): BillingSnapshot
     {
-        // collect all engagements of the instructor in this cohort
+        // collect all engagements of the instructor in this cohort (via pivot table)
         $engagements = Engagement::with('sessions')
             ->where('instructor_id', $instructor->id)
-            ->where('cohort_id', $cohort->id)
+            ->whereHas('cohorts', function ($q) use ($cohort) {
+                $q->where('cohorts.id', $cohort->id);
+            })
             ->get();
 
         // calculate total delivered hours

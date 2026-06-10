@@ -226,4 +226,21 @@ class CohortController extends Controller
 
         return $this->successResponse(null, 'Student enrolled successfully.');
     }
+
+    // get all grades for students in a cohort
+    // GET /api/v1/cohorts/{cohort}/grades
+    public function grades(Cohort $cohort): JsonResponse
+    {
+        $this->authorize('view', $cohort);
+
+        $studentIds = $cohort->students()->pluck('users.id')->toArray();
+
+        $grades = \App\Models\Grade::whereIn('student_id', $studentIds)
+            ->with(['courseComponent.course', 'student:id,name'])
+            ->latest()
+            ->get();
+
+        return $this->successResponse($grades, 'Cohort grades retrieved successfully.');
+    }
 }
+

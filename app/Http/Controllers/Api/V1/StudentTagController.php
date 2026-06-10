@@ -86,4 +86,61 @@ class StudentTagController extends Controller
 
         return $this->successResponse(null, 'Tag removed successfully.');
     }
+
+    // list notes for a student
+    // GET /api/v1/students/{id}/notes
+    public function listNotes(int $id): JsonResponse
+    {
+        $student = User::where('role', 'student')->findOrFail($id);
+        $this->authorize('view', $student);
+
+        $notes = StudentTag::where('student_id', $id)
+            ->whereNotNull('note')
+            ->with('creator:id,name')
+            ->latest()
+            ->get();
+
+        return $this->successResponse($notes, 'Student notes retrieved successfully.');
+    }
+
+    // add a note to a student
+    // POST /api/v1/students/{id}/notes
+    public function storeNote(Request $request, int $id): JsonResponse
+    {
+        $student = User::where('role', 'student')->findOrFail($id);
+
+        // instructor can only add notes for students in his lab group
+        if ($request->user()->role == 'instructor') {
+            $isMyStudent = $request->user()->instructedLabGroups()
+                ->whereHas('students', function ($q) use ($student) {
+                    $q->where('users.id', $student->id);
+                })->exists();
+
+            if (!$isMyStudent) {
+                return $this->errorResponse('You can only add notes to students in your lab groups.', 403);
+            }
+        }
+
+        $this->authorize('update', $student);
+
+        $validated = $request->validate([
+            'note' => 'required|string|max:2000',
+            'tag' => 'nullable|string|max:50',
+        ]);
+
+        // use 'note' as tag label if no tag provided
+        $tagLabel = 'note';
+        if (isset($validated['tag'])) {
+            $tagLabel = $validated['tag'];
+        }
+
+        $noteRecord = StudentTag::create([
+            'student_id' => $student->id,
+            'creator_id' => $request->user()->id,
+            'tag' => $tagLabel,
+            'note' => $validated['note'],
+        ]);
+
+        return $this->successResponse($noteRecord, 'Note added successfully.', 201);
+    }
 }
