@@ -102,4 +102,26 @@ class LabGroupController extends Controller
             'Lab group details retrieved.'
         );
     }
+
+    // list all lab groups for a cohort
+    // GET /api/v1/cohorts/{cohort}/lab-groups
+    public function index(Cohort $cohort): JsonResponse
+    {
+        $this->authorize('view', $cohort);
+
+        $labGroups = $cohort->labGroups()->with(['students:id,name,email', 'instructors:id,name,email'])->get();
+
+        return $this->successResponse($labGroups, 'Lab groups retrieved successfully.');
+    }
+
+    // remove a student from a lab group
+    // DELETE /api/v1/lab-groups/{labGroup}/students/{studentId}
+    public function removeStudent(LabGroup $labGroup, int $studentId): JsonResponse
+    {
+        $this->authorize('update', $labGroup);
+
+        $labGroup->students()->detach($studentId);
+
+        return $this->successResponse(null, 'Student removed from lab group successfully.');
+    }
 }

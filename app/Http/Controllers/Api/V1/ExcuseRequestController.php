@@ -108,9 +108,10 @@ class ExcuseRequestController extends Controller
         // marked absent for this session. convertToExcused() reverses a -25 deduction;
         // calling it without a confirmed absence corrupts the ledger balance.
         if ($validated['status'] === 'approved') {
+            // absence = arrived_at IS NULL (the table has no status column)
             $absenceRecord = AttendanceRecord::where('session_id', $excuse->session_id)
                 ->where('student_id', $excuse->student_id)
-                ->where('status', 'absent')
+                ->whereNull('arrived_at')
                 ->first();
 
             if (!$absenceRecord) {

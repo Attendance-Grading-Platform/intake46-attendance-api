@@ -94,4 +94,33 @@ class AnnouncementController extends Controller
 
         return $this->successResponse(null, 'Announcement deleted successfully');
     }
+
+    // student or instructor sees their announcements
+    // GET /api/v1/me/announcements
+    public function myAnnouncements(\Illuminate\Http\Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $cohortIds = [];
+
+        if ($user->role == 'student') {
+            $cohortIds = $user->enrolledCohorts()->pluck('cohorts.id')->toArray();
+        } elseif ($user->role == 'instructor') {
+            $cohorts = Cohort::whereHas('engagements', function ($q) use ($user) {
+                $q->where('engagements.instructor_id', $user->id);
+            })->get();
+
+            foreach ($cohorts as $cohort) {
+                $cohortIds[] = $cohort->id;
+            }
+        } else {
+            // track admin or branch manager sees all
+            $cohortIds = Cohort::pluck('id')->toArray();
+        }
+
+        $announcements = Announcement::whereIn('cohort_id', $cohortIds)
+            ->latest('published_at')
+            ->get();
+
+        return $this->successResponse($announcements, 'Announcements retrieved successfully.');
+    }
 }
