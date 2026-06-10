@@ -14,6 +14,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
+
 /**
  * ExcuseRequestController — Manages the excuse request lifecycle
  * within the V1 API surface.
@@ -90,38 +91,42 @@ class ExcuseRequestController extends Controller
         );
     }
 
-    public function store(Request $request): JsonResponse
+    /* ──────────────────────────────────────────────────────────
+     |  POST /api/v1/excuse-requests
+     |──────────────────────────────────────────────────────────
+     |  Student submits a new excuse request for a missed session.
+     |
+     |  The StoreExcuseRequest handles:
+     |    1. Authorization via ExcuseRequestPolicy@create
+     |       (only students may submit).
+     |    2. Payload validation (session_id, reason, optional attachment).
+     |    3. Duplicate-submission guard (one excuse per session per student).
+     |
+     |  File storage and any side-effects are delegated to ExcuseService.
+     |──────────────────────────────────────────────────────────*/
+
+    /**
+     * Submit a new excuse request.
+     *
+     * POST /api/v1/excuse-requests
+     *
+     * @param  StoreExcuseRequest  $request  Validated & authorized payload.
+     * @return JsonResponse
+     */
+    public function store(StoreExcuseRequest $request): JsonResponse
     {
-        $this->authorize('create', ExcuseRequest::class);
+        $validated = $request->validated();
 
-        $validated = $request->validate([
-            'session_id' => 'required|exists:engagement_sessions,id',
-            'reason'     => 'required|string|max:2000',
-            'attachment' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:1024',
-        ]);
+        // Delegate to the service layer. ExcuseService::submitExcuse()
+        // handles file upload storage and creates the ExcuseRequest record
+        // with status = 'requested'.
+        $excuse = $this->excuseService->submitExcuse(
+            student:    $request->user(),
+            sessionId:  (int) $validated['session_id'],
+            reason:     $validated['reason'],
+            attachment: $request->file('attachment'),
+        );
 
-        // check if student already submit excuse for this session
-        $existing = ExcuseRequest::where('student_id', $request->user()->id)
-            ->where('session_id', $validated['session_id'])
-            ->first();
-
-        if ($existing) {
-            return $this->errorResponse('You already have excuse request for this session.', 422);
-        }
-
-        // save file if student upload attachment
-        $attachmentPath = null;
-        if ($request->hasFile('attachment')) {
-            $attachmentPath = $request->file('attachment')->store('excuse-attachments', 'local');
-        }
-
-        $excuse = ExcuseRequest::create([
-            'student_id'      => $request->user()->id,
-            'session_id'      => $validated['session_id'],
-            'status'          => 'requested',
-            'reason'          => $validated['reason'],
-            'attachment_path' => $attachmentPath,
-        ]);
 
         return $this->successResponse(
             $excuse->load(['student:id,name', 'session']),
@@ -221,12 +226,8 @@ class ExcuseRequestController extends Controller
     {
         $this->authorize('delete', $excuse);
 
-        // delete attachment file from storage if exist
-        if ($excuse->attachment_path) {
-            Storage::disk('local')->delete($excuse->attachment_path);
-        }
-
-        $excuse->delete();
+        // Delegate cleanup (attachment file deletion) to the service.
+        $this->excuseService->deleteExcuse($excuse);
 
         return $this->successResponse(null, 'Excuse request deleted successfully.');
     }

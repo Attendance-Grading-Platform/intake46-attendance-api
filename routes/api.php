@@ -191,6 +191,7 @@ Route::prefix('v1')
         Route::post('/attendance/scan', [AttendanceController::class, 'scan'])->name('v1.attendance.scan');
         Route::get('/students/{id}/attendance', [AttendanceController::class, 'studentAttendance'])->name('v1.students.attendance');
 
+
         // ── Analytics ────────────────────────────────
         Route::prefix('analytics')->group(function (): void {
             Route::get('/branch', [AnalyticsController::class, 'branchAnalytics'])->name('v1.analytics.branch');

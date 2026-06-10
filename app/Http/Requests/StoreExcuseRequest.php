@@ -103,6 +103,7 @@ class StoreExcuseRequest extends FormRequest
                         'You can only submit an excuse for a session you were marked absent in.'
                     );
                 }
+
             }
         });
     }
