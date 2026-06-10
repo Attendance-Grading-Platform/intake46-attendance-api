@@ -34,7 +34,7 @@ class Engagement extends Model
         'days_of_week',
         'daily_start_time',
         'daily_end_time',
-  ];
+    ];
 
     protected $casts = [
         'start_date'        => 'date',
