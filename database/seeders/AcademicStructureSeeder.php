@@ -28,6 +28,7 @@ class AcademicStructureSeeder extends Seeder
             'ended_at' => now()->addMonths(3),
         ]);
 
+
         $testStudent = \App\Models\User::where('email', 'student@iti.test')->first();
         if ($testStudent) {
             $cohort->students()->syncWithoutDetaching([$testStudent->id => ['enrolled_at' => now()]]);
