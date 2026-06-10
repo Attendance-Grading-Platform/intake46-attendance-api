@@ -1,0 +1,18 @@
+meta {
+  name: Update Announcement
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{baseUrl}}/v1/announcements/1
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "title": "Updated Announcement",
+    "body": "The session time has changed."
+  }
+}

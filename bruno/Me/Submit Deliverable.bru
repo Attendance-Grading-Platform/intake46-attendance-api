@@ -1,0 +1,16 @@
+meta {
+  name: Submit Deliverable
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/v1/me/submissions
+  body: multipartForm
+  auth: inherit
+}
+
+body:multipart-form {
+  course_component_id: 1
+  submission_url: https://github.com/student/repo
+}

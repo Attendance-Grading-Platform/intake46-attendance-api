@@ -1,0 +1,18 @@
+meta {
+  name: Grade Deliverable
+  type: http
+  seq: 1
+}
+
+put {
+  url: {{baseUrl}}/v1/deliverables/1/grade
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "raw_score": 8.5,
+    "raw_max": 10;
+  }
+}

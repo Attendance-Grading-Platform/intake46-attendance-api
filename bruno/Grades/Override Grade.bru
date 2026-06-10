@@ -1,0 +1,18 @@
+meta {
+  name: Override Grade
+  type: http
+  seq: 1
+}
+
+patch {
+  url: {{baseUrl}}/v1/grades/1/override
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "new_score": 85,
+    "note": "Student submitted correct version via email — instructor was not aware"
+  }
+}
