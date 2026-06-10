@@ -53,7 +53,7 @@ Route::prefix('auth')->middleware('throttle:5,1')->group(function () {
 // 2. Protected — Versioned API (v1)
 // ──────────────────────────────────────────────────────────
 Route::prefix('v1')
-    ->middleware(['auth:sanctum', CheckAccountExpiry::class])
+    ->middleware(['auth:sanctum', \App\Http\Middleware\CheckAccountExpiry::class, \App\Http\Middleware\CheckEngagementWindow::class])
     ->group(function (): void {
 
         // ── Auth & User Management ───────────────────

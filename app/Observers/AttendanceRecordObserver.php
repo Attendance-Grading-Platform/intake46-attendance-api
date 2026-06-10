@@ -9,20 +9,12 @@ use App\Models\AttendanceRecord;
 
 /**
  * ATT-4..6: Automatically manage the attendance ledger when a record is saved.
- *
- * Trigger: when an AttendanceRecord is *created* with arrived_at = null
- * (meaning the student was marked absent for that session).
- *
- * The deduction lifecycle:
- *   – Absent (no scan-in)   → -25 from ledger  (ATT-5)
- *   – Excuse approved        → +20 refund        (handled in ExcuseRequestController)
- *   – Ledger floor           → balance never goes below 0
+ * Hardened version using Transactions (SC-3).
  */
 class AttendanceRecordObserver
 {
     /**
      * Called after an AttendanceRecord is created.
-     * If student was absent (arrived_at is null), deduct 25 from their ledger.
      */
     public function created(AttendanceRecord $record): void
     {
@@ -33,33 +25,49 @@ class AttendanceRecordObserver
 
         $ledger = AttendanceLedger::firstOrCreate(
             ['student_id' => $record->student_id],
-            ['balance' => 250]
+            ['balance' => AttendanceLedger::INITIAL_BALANCE]
         );
 
-        // ATT-5: Unexcused absence = -25 pts, floor at 0
-        $ledger->deductUnexcused();
-
-        // Enforce floor: balance must never go below 0
-        if ($ledger->balance < 0) {
-            $ledger->update(['balance' => 0]);
-        }
+        // Record unexcused absence transaction
+        $ledger->deductUnexcused($record->session_id);
     }
 
     /**
      * Called after an AttendanceRecord is updated.
-     * If arrived_at transitions from null → a timestamp, the student
-     * went from absent to present — refund the -25 deduction.
      */
     public function updated(AttendanceRecord $record): void
     {
-        // Check: was absent before, present now
+        // Case: was absent (null), now scanned-in (timestamp)
+        // Transition: unexcused (-25) -> present (0)
         if ($record->getOriginal('arrived_at') === null && $record->arrived_at !== null) {
             $ledger = AttendanceLedger::where('student_id', $record->student_id)->first();
 
             if ($ledger) {
-                // Refund the -25 that was auto-deducted on creation
-                $ledger->increment('balance', 25);
+                // Delete the unexcused transaction if it exists
+                $ledger->transactions()->where('session_id', $record->session_id)->delete();
+                $ledger->recalculateBalance();
             }
+        }
+        
+        // Case: was present (timestamp), now marked absent (null) - manual override
+        if ($record->getOriginal('arrived_at') !== null && $record->arrived_at === null) {
+            $ledger = AttendanceLedger::where('student_id', $record->student_id)->first();
+            if ($ledger) {
+                $ledger->deductUnexcused($record->session_id);
+            }
+        }
+    }
+    
+    /**
+     * Called after an AttendanceRecord is deleted.
+     */
+    public function deleted(AttendanceRecord $record): void
+    {
+        // Clean up any transactions linked to this session
+        $ledger = AttendanceLedger::where('student_id', $record->student_id)->first();
+        if ($ledger) {
+            $ledger->transactions()->where('session_id', $record->session_id)->delete();
+            $ledger->recalculateBalance();
         }
     }
 }

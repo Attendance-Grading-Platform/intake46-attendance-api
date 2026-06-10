@@ -39,14 +39,14 @@ class AnnouncementController extends Controller
         // validate announcement using policy
         $this->authorize('create', [Announcement::class, $cohort]);
 
-        // ANN-2 / ENG-5: Instructor window enforcement
+        // ANN-2 / ENG-5: Instructor window enforcement (Date-only comparison)
         if ($request->user()->role === 'instructor') {
             $hasActiveEngagement = \App\Models\Engagement::where('instructor_id', $request->user()->id)
                 ->whereHas('cohorts', function ($q) use ($cohort) {
                     $q->where('cohorts.id', $cohort->id);
                 })
-                ->where('start_date', '<=', now())
-                ->where('end_date', '>=', now())
+                ->where('start_date', '<=', now()->toDateString())
+                ->where('end_date', '>=', now()->toDateString())
                 ->exists();
 
             if (!$hasActiveEngagement) {

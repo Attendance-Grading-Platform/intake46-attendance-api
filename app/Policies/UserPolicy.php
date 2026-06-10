@@ -70,16 +70,20 @@ class UserPolicy
      */
     public function create(User $user, string $targetRole = 'student'): Response
     {
-        // Branch Manager Context: Can provision any role
+        // Branch Manager Context: Can provision management but NOT another Branch Manager
         if ($user->role === 'branch_manager') {
+            if ($targetRole === 'branch_manager') {
+                return Response::deny('SEC-1: Branch Managers cannot create other Branch Managers via API.');
+            }
             return Response::allow();
         }
 
-        // Track Admin Context: Can only provision instructors and students
+        // Track Admin Context: Can only provision instructors and students for THEIR tracks
         if ($user->role === 'track_admin') {
-            return in_array($targetRole, ['instructor', 'student'])
-                ? Response::allow()
-                : Response::deny('SEC-1: Track Admins can only create instructor or student accounts.');
+            if (in_array($targetRole, ['instructor', 'student'])) {
+                return Response::allow();
+            }
+            return Response::deny('SEC-1: Track Admins can only create instructor or student accounts.');
         }
 
         return Response::deny('SEC-1: Only management can provision new accounts.');

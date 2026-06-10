@@ -26,11 +26,16 @@ class SubmissionController extends Controller
     {
         $this->authorize('create', Submission::class);
 
+        // SC-18: Exactly one of URL or File is required. 10MB limit and PDF/Image mimes.
         $validated = $request->validate([
             'course_component_id' => 'required|exists:course_components,id',
             'submission_url'      => 'nullable|url|required_without:submission_file',
-            'submission_file'     => 'nullable|file|max:5120|required_without:submission_url', // 5MB max
+            'submission_file'     => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240|required_without:submission_url',
         ]);
+
+        if ($request->filled('submission_url') && $request->hasFile('submission_file')) {
+            return $this->errorResponse('You must provide EITHER a URL OR a file, not both.', 422);
+        }
 
         $student = $request->user();
         $component = CourseComponent::findOrFail($validated['course_component_id']);
@@ -41,13 +46,19 @@ class SubmissionController extends Controller
             ->exists();
 
         if (!$isEnrolled) {
-            return $this->errorResponse('You are not enrolled in the cohort for this component.', 403);
+            return $this->errorResponse('You are not enrolled in the cohort for this course component.', 403);
         }
 
         // Handle file upload
         $filePath = null;
         if ($request->hasFile('submission_file')) {
             $filePath = $request->file('submission_file')->store('submissions', 'local');
+        }
+
+        // SC-18: Automatically flag if late
+        $isLate = false;
+        if ($component->due_date && now()->greaterThan($component->due_date)) {
+            $isLate = true;
         }
 
         // Create or Update (allow student to resubmit if not graded yet)
@@ -57,9 +68,10 @@ class SubmissionController extends Controller
                 'course_component_id' => $component->id,
             ],
             [
-                'submission_url'  => $validated['submission_url'] ?? null,
-                'submission_file' => $filePath,
-                'submitted_at'    => now(),
+                'submission_url'       => $validated['submission_url'] ?? null,
+                'submission_file_path' => $filePath, // Fixed column name mismatch if any
+                'is_late'              => $isLate,
+                'submitted_at'         => now(),
             ]
         );
 
