@@ -35,6 +35,7 @@ class BillingSnapshotService
 
         if ($compensationType === 'internal') {
             $fixedSalaryComponent = $instructor->fixed_salary ?? 0;
+            $hourlyComponent = $totalDeliveredHours * ($instructor->hourly_rate ?? 0);
         } else {
             $hourlyComponent = $totalDeliveredHours * ($instructor->hourly_rate ?? 0);
         }

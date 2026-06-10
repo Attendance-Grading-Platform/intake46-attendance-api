@@ -48,7 +48,7 @@ class ExcuseRequestController extends Controller
         $validated = $request->validate([
             'session_id' => 'required|exists:engagement_sessions,id',
             'reason'     => 'required|string|max:2000',
-            'attachment' => 'nullable|file|mimes:pdf,jpg,jpeg,png,gif,webp|max:1024',
+            'attachment' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:1024',
         ]);
 
         // check if student already submit excuse for this session
@@ -123,19 +123,23 @@ class ExcuseRequestController extends Controller
         }
 
         DB::transaction(function () use ($excuse, $validated, $request) {
-            if ($validated['status'] === 'approved') {
-                $ledger = AttendanceLedger::where('student_id', $excuse->student_id)->first();
+            $ledger = AttendanceLedger::where('student_id', $excuse->student_id)->first();
 
+            if ($validated['status'] === 'approved') {
                 if ($ledger) {
-                    // Reverse the -25 unexcused deduction and apply the -5 excused one (+20 net)
-                    $ledger->convertToExcused();
+                    // SC-3: Replaces manual balance increment with transaction-based refund
+                    $ledger->deductExcused($excuse->session_id, $excuse->id);
                 } else {
-                    // Edge case: ledger was never created (e.g., scanner failure).
-                    // CRIT-E2: Use named constant; do NOT hardcode 245.
-                    AttendanceLedger::create([
+                    $ledger = AttendanceLedger::create([
                         'student_id' => $excuse->student_id,
-                        'balance'    => AttendanceLedger::INITIAL_BALANCE - 5,
+                        'balance'    => AttendanceLedger::INITIAL_BALANCE,
                     ]);
+                    $ledger->deductExcused($excuse->session_id, $excuse->id);
+                }
+            } elseif ($validated['status'] === 'rejected') {
+                // If it was previously approved (edge case or future feature) or if we just want to ensure it's unexcused
+                if ($ledger) {
+                    $ledger->revertToUnexcused($excuse->session_id);
                 }
             }
 

@@ -27,6 +27,7 @@ class SubmissionReviewController extends Controller
 
         // Strict Query Isolation
         if ($user->role === 'instructor') {
+            // SC-15/D3: Only students in lab groups assigned to this instructor
             $studentIds = $user->instructedLabGroups()
                 ->with('students')
                 ->get()
@@ -37,6 +38,7 @@ class SubmissionReviewController extends Controller
             $query->whereIn('student_id', $studentIds);
 
         } elseif ($user->role === 'track_admin') {
+            // SEC-1: Only students in cohorts where this admin is assigned
             $cohortIds = $user->administeredCohorts()->pluck('cohorts.id');
             $studentIds = User::whereHas('enrolledCohorts', function($q) use ($cohortIds) {
                 $q->whereIn('cohorts.id', $cohortIds);
@@ -44,6 +46,7 @@ class SubmissionReviewController extends Controller
             $query->whereIn('student_id', $studentIds);
 
         } elseif ($user->role === 'student') {
+            // SEC-1: Students only see their own work
             $query->where('student_id', $user->id);
         }
 
@@ -157,5 +160,29 @@ class SubmissionReviewController extends Controller
         ];
 
         return $this->successResponse($data, 'Student detailed grade analytics retrieved successfully.');
+    }
+
+    /**
+     * GET /api/v1/engagements/{id}/deliverables
+     * Filter submissions specifically for a given engagement.
+     */
+    public function engagementDeliverables(Request $request, string $id)
+    {
+        $engagement = \App\Models\Engagement::findOrFail($id);
+        $this->authorize('view', $engagement);
+
+        // Fetch students from the cohort associated with this engagement
+        $cohortIds = $engagement->cohorts()->pluck('cohorts.id');
+        $studentIds = User::whereHas('enrolledCohorts', function($q) use ($cohortIds) {
+            $q->whereIn('cohorts.id', $cohortIds);
+        })->pluck('id');
+
+        $submissions = Submission::whereIn('student_id', $studentIds)
+            ->with(['student', 'courseComponent'])
+            ->latest()
+            ->paginate(15);
+
+        $resourceCollection = SubmissionReviewResource::collection($submissions)->response()->getData(true);
+        return $this->successResponse($resourceCollection, 'Engagement submissions retrieved successfully.');
     }
 }
