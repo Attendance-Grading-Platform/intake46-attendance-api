@@ -31,9 +31,23 @@ class AcademicStructureSeeder extends Seeder
         $courses = ['Laravel Advanced', 'React & Tailwind', 'Linux Administration'];
 
         foreach ($courses as $courseName) {
-            Course::create([
+            $course = Course::create([
                 'name' => $courseName,
                 'cohort_id' => $cohort->id,
+            ]);
+
+            \App\Models\CourseComponent::create([
+                'course_id' => $course->id,
+                'type' => 'lab_deliverable',
+                'weight' => 50,
+                'due_date' => now()->addDays(10),
+            ]);
+
+            \App\Models\CourseComponent::create([
+                'course_id' => $course->id,
+                'type' => 'final_exam',
+                'weight' => 50,
+                'due_date' => now()->addDays(20),
             ]);
         }
     }
