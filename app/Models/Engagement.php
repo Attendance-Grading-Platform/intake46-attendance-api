@@ -27,13 +27,13 @@ class Engagement extends Model
         'type',
         'start_date',
         'end_date',
-        'scheduled_hours',
+        'hours_per_session',
     ];
 
     protected $casts = [
-        'start_date'      => 'date',
-        'end_date'        => 'date',
-        'scheduled_hours' => 'integer',
+        'start_date'        => 'date',
+        'end_date'          => 'date',
+        'hours_per_session' => 'decimal:2',
     ];
 
 /* ──────────────────────────────────────────────
@@ -101,8 +101,8 @@ class Engagement extends Model
      */
     public function deliveredHours(): int
     {
-        return (int) $this->sessions()
+        return (int) ($this->sessions()
                         ->where('delivered', true)
-                        ->count() * $this->scheduled_hours;
+                        ->count() * $this->hours_per_session);
     }
 }

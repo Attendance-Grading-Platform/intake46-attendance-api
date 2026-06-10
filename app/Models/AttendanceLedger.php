@@ -20,6 +20,7 @@ class AttendanceLedger extends Model
 
     protected $fillable = [
         'student_id',
+        'cohort_id',
         'balance',
     ];
 

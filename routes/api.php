@@ -128,7 +128,9 @@ Route::prefix('v1')
         Route::post('/announcements', [AnnouncementController::class, 'store'])
             ->name('v1.announcements.store');
 
-        // ── Attendance ───────────────────────────────────
+        // ── Attendance (ATT-1, ATT-4) ────────────────────
+        Route::post('/attendance/scan', [AttendanceController::class, 'scan'])
+            ->name('v1.attendance.scan');
         Route::get('/students/{id}/attendance', [AttendanceController::class, 'studentAttendance'])
             ->name('v1.students.attendance');
 

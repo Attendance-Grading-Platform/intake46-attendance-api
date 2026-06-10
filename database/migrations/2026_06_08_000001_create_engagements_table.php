@@ -14,16 +14,13 @@ return new class extends Migration
     {
         Schema::create('engagements', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('cohort_id')
-                  ->constrained()
-                  ->cascadeOnDelete();
             $table->foreignId('instructor_id')
                   ->constrained('users')
                   ->cascadeOnDelete();
-            $table->enum('type', ['lecture', 'lab', 'business_session']);
+            $table->enum('type', ['lecture', 'lab', 'business']);
             $table->date('start_date');
             $table->date('end_date');
-            $table->unsignedInteger('scheduled_hours');
+            $table->decimal('hours_per_session', 8, 2);
             $table->timestamps();
 
             $table->index(['instructor_id', 'start_date', 'end_date']);

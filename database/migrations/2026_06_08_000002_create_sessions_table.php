@@ -19,6 +19,7 @@ return new class extends Migration
                   ->cascadeOnDelete();
             $table->date('session_date');
             $table->boolean('delivered')->default(false);
+            $table->timestamp('delivered_at')->nullable();
             $table->timestamps();
 
             // Prevent duplicate sessions for the same engagement on the same day

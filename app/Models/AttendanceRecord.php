@@ -21,6 +21,8 @@ class AttendanceRecord extends Model
     protected $fillable = [
         'session_id',
         'student_id',
+        'track_id',
+        'status',
         'arrived_at',
         'left_at',
     ];

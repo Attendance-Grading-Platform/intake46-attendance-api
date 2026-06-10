@@ -22,6 +22,10 @@ return new class extends Migration
             $table->foreignId('student_id')
                   ->constrained('users')
                   ->cascadeOnDelete();
+            $table->foreignId('track_id')
+                  ->constrained('tracks')
+                  ->cascadeOnDelete();
+            $table->enum('status', ['present', 'absent', 'excused'])->default('absent');
             $table->timestamp('arrived_at')->nullable();
             $table->timestamp('left_at')->nullable();
             $table->timestamps();
