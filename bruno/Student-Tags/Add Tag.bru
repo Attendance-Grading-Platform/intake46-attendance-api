@@ -1,0 +1,18 @@
+meta {
+  name: Add Tag
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/v1/students/1/tags
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "tag": "fast-learner",
+    "note": "Participates actively in lab sessions."
+  }
+}

@@ -16,6 +16,10 @@ use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\BillingController;
 use App\Http\Controllers\Api\V1\PasswordResetController;
 use App\Http\Controllers\Api\V1\ExcuseRequestController;
+use App\Http\Controllers\Api\V1\LabGroupController;
+use App\Http\Controllers\Api\V1\AnalyticsController;
+use App\Http\Controllers\Api\V1\SubmissionController;
+use App\Http\Controllers\Api\V1\StudentTagController;
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\CheckAccountExpiry;
@@ -52,126 +56,121 @@ Route::prefix('v1')
     ->middleware(['auth:sanctum', CheckAccountExpiry::class])
     ->group(function (): void {
 
-        // Auth actions that require an active session/token
+        // ── Auth & User Management ───────────────────
         Route::prefix('auth')->group(function (): void {
-            Route::get('/me', [AuthController::class, 'me'])
-                ->name('v1.auth.me');
-            Route::post('/logout', [AuthController::class, 'logout'])
-                ->name('v1.auth.logout');
+            Route::get('/me', [AuthController::class, 'me'])->name('v1.auth.me');
+            Route::post('/logout', [AuthController::class, 'logout'])->name('v1.auth.logout');
+            
+            // New user management endpoints
+            Route::get('/users', [AuthController::class, 'index'])->name('v1.auth.users.index');
+            Route::post('/users', [AuthController::class, 'store'])->name('v1.auth.users.store');
+            Route::get('/users/{user}', [AuthController::class, 'show'])->name('v1.auth.users.show');
+            Route::put('/users/{user}', [AuthController::class, 'update'])->name('v1.auth.users.update');
+            Route::delete('/users/{user}', [AuthController::class, 'destroy'])->name('v1.auth.users.destroy');
         });
 
         // ── Tracks ───────────────────────────────────────
-        Route::get('/tracks', [TrackController::class, 'index'])
-            ->name('v1.tracks.index');
-        Route::get('/tracks/{track}/cohorts', [CohortController::class, 'trackCohorts'])
-            ->name('v1.tracks.cohorts');
-        Route::delete('/tracks/{track}', [TrackController::class, 'destroy'])
-            ->middleware('role:branch_manager')
-            ->name('v1.tracks.destroy');
+        Route::get('/tracks', [TrackController::class, 'index'])->name('v1.tracks.index');
+        Route::get('/tracks/{id}/cohorts', [CohortController::class, 'trackCohorts'])->name('v1.tracks.cohorts');
 
-        // ── Cohorts (LC-2) ───────────────────────────────
-        Route::get('/cohorts', [CohortController::class, 'index'])
-            ->name('v1.cohorts.index');
+        // ── Cohorts ───────────────────────────────
+        Route::apiResource('cohorts', CohortController::class)->except(['destroy']);
+        Route::delete('/cohorts/{cohort}', [CohortController::class, 'destroy'])->name('v1.cohorts.destroy');
+        Route::put('/cohorts/{cohort}/close', [CohortController::class, 'close'])->name('v1.cohorts.close');
+        Route::post('/cohorts/{cohort}/enroll', [CohortController::class, 'enroll'])->name('v1.cohorts.enroll');
+        Route::get('/cohorts/{cohort}/students', [CohortController::class, 'students'])->name('v1.cohorts.students');
+        Route::get('/cohorts/{cohort}/grades', [CohortController::class, 'grades'])->name('v1.cohorts.grades');
+        Route::post('/cohorts/{cohort}/assign-admin', [CohortController::class, 'assignAdmin'])->name('v1.cohorts.assign-admin');
+        Route::get('/cohorts/{cohort}/lab-groups', [LabGroupController::class, 'index'])->name('v1.lab-groups.index');
 
-        Route::post('/cohorts', [CohortController::class, 'store'])
-            ->name('v1.cohorts.store');
+        // ── Lab Groups ──────────────────────────────
+        Route::post('/cohorts/{cohort}/lab-groups', [LabGroupController::class, 'store'])->name('v1.lab-groups.store');
+        Route::get('/lab-groups/{labGroup}', [LabGroupController::class, 'show'])->name('v1.lab-groups.show');
+        Route::post('/lab-groups/{labGroup}/instructors', [LabGroupController::class, 'assignInstructors'])->name('v1.lab-groups.assign-instructors');
+        Route::post('/lab-groups/{labGroup}/students', [LabGroupController::class, 'assignStudents'])->name('v1.lab-groups.assign-students');
+        Route::delete('/lab-groups/{labGroup}/students/{studentId}', [LabGroupController::class, 'removeStudent'])->name('v1.lab-groups.remove-student');
 
-        Route::get('/cohorts/{cohort}', [CohortController::class, 'show'])
-            ->name('v1.cohorts.show');
+        // ── Courses ─────────────────────────────────
+        Route::get('/cohorts/{cohort}/courses', [CourseController::class, 'index'])->name('v1.courses.index');
+        Route::post('/cohorts/{cohort}/courses', [CourseController::class, 'store'])->name('v1.courses.store');
+        Route::apiResource('courses', CourseController::class)->only(['update', 'destroy'])->names('v1.courses');
+        Route::post('/courses/{course}/components', [CourseController::class, 'storeComponent'])->name('v1.course-components.store');
+        Route::put('/course-components/{component}', [CourseController::class, 'updateComponent'])->name('v1.course-components.update');
+        Route::delete('/course-components/{component}', [CourseController::class, 'destroyComponent'])->name('v1.course-components.destroy');
 
-        Route::put('/cohorts/{cohort}', [CohortController::class, 'update'])
-            ->name('v1.cohorts.update');
-        Route::post('/cohorts/{cohort}/enroll', [CohortController::class, 'enroll'])
-            ->name('v1.cohorts.enroll');
-        Route::get('/cohorts/{cohort}/students', [CohortController::class, 'students'])
-            ->name('v1.cohorts.students');
-
-        Route::post('/cohorts/{cohort}/assign-admin', [CohortController::class, 'assignAdmin'])
-            ->name('v1.cohorts.assign-admin');
-        Route::delete('/cohorts/{cohort}', [CohortController::class, 'destroy'])
-            ->name('v1.cohorts.destroy');
-
-        // ── Lab Groups (D2) ──────────────────────────────
-        Route::post('/cohorts/{cohort}/lab-groups', [LabGroupController::class, 'store'])
-            ->name('v1.lab-groups.store');
-        Route::get('/lab-groups/{labGroup}', [LabGroupController::class, 'show'])
-            ->name('v1.lab-groups.show');
-        Route::post('/lab-groups/{labGroup}/instructors', [LabGroupController::class, 'assignInstructors'])
-            ->name('v1.lab-groups.assign-instructors');
-        Route::post('/lab-groups/{labGroup}/students', [LabGroupController::class, 'assignStudents'])
-            ->name('v1.lab-groups.assign-students');
-
-        // ── Analytics & Rollups (ANL-1) ──────────────────
-        Route::get('/cohorts/{cohort}/analytics', [AnalyticsController::class, 'summary'])
-            ->name('v1.analytics.summary');
-        Route::post('/cohorts/{cohort}/analytics/sync', [AnalyticsController::class, 'sync'])
-            ->name('v1.analytics.sync');
-
-        // ── Courses (D3) ─────────────────────────────────
-        Route::get('/cohorts/{cohort}/courses', [CourseController::class, 'index'])
-            ->name('v1.courses.index');
-        Route::post('/cohorts/{cohort}/courses', [CourseController::class, 'store'])
-            ->name('v1.courses.store');
-        Route::put('/courses/{course}', [CourseController::class, 'update'])
-            ->name('v1.courses.update');
-
-        Route::post('/courses/{course}/components', [CourseController::class, 'storeComponent'])
-            ->name('v1.course-components.store');
-        Route::put('/course-components/{component}', [CourseController::class, 'updateComponent'])
-            ->name('v1.course-components.update');
-
-        // — Grades (Student)
+        // ── Grades ──────────────────────────────────
         Route::prefix('grades')->group(function (): void {
             Route::get('/', [GradeController::class, 'index'])->name('v1.grades.index');
+            Route::post('/', [GradeController::class, 'store'])->name('v1.grades.store');
+            Route::get('/{grade}', [GradeController::class, 'show'])->name('v1.grades.show');
+            Route::put('/{grade}', [GradeController::class, 'update'])->name('v1.grades.update');
+            Route::patch('/{grade}/override', [GradeController::class, 'override'])->middleware('role:track_admin')->name('v1.grades.override');
+        });
+        Route::get('/students/{id}/grades', [GradeController::class, 'studentGrades'])->name('v1.students.grades');
+
+        // ── Deliverables ────────────────────────────
+        Route::get('/deliverables/{id}', [SubmissionReviewController::class, 'show'])->name('v1.deliverables.show');
+        Route::put('/deliverables/{id}/grade', [SubmissionReviewController::class, 'update'])->name('v1.deliverables.grade');
+
+        // ── Engagements & Sessions ──────────────────
+        Route::apiResource('engagements', EngagementController::class)->names('v1.engagements');
+        Route::post('/engagements/{engagement}/sessions', [SessionController::class, 'store'])->name('v1.sessions.store');
+        Route::get('/engagements/{engagement}/sessions', [SessionController::class, 'index'])->name('v1.sessions.index');
+        Route::get('/engagements/{engagement}/deliverables', [SubmissionReviewController::class, 'engagementDeliverables'])->name('v1.engagements.deliverables');
+        
+        Route::get('/sessions/{session}', [SessionController::class, 'show'])->name('v1.sessions.show');
+        Route::patch('/sessions/{session}', [SessionController::class, 'update'])->name('v1.sessions.update');
+        Route::delete('/sessions/{session}', [SessionController::class, 'destroy'])->name('v1.sessions.destroy');
+        Route::get('/sessions/{session}/attendance', [AttendanceController::class, 'sessionAttendance'])->name('v1.sessions.attendance');
+        Route::post('/sessions/{session}/mark-absent', [AttendanceController::class, 'markAbsent'])->name('v1.sessions.mark-absent');
+
+        // ── Announcements ────────────────────────────
+        Route::get('/cohorts/{cohort}/announcements', [AnnouncementController::class, 'index'])->name('v1.cohorts.announcements.index');
+        Route::post('/cohorts/{cohort}/announcements', [AnnouncementController::class, 'store'])->name('v1.cohorts.announcements.store');
+        Route::get('/announcements/{announcement}', [AnnouncementController::class, 'show'])->name('v1.announcements.show');
+        Route::put('/announcements/{announcement}', [AnnouncementController::class, 'update'])->name('v1.announcements.update');
+        Route::delete('/announcements/{announcement}', [AnnouncementController::class, 'destroy'])->name('v1.announcements.destroy');
+
+        // ── Student Tags & Notes ─────────────────────
+        Route::get('/students/{id}/tags', [StudentTagController::class, 'index'])->name('v1.students.tags.index');
+        Route::post('/students/{id}/tags', [StudentTagController::class, 'store'])->name('v1.students.tags.store');
+        Route::delete('/students/{id}/tags/{tag}', [StudentTagController::class, 'destroy'])->name('v1.students.tags.destroy');
+        Route::get('/students/{id}/notes', [StudentTagController::class, 'listNotes'])->name('v1.students.notes.index');
+        Route::post('/students/{id}/notes', [StudentTagController::class, 'storeNote'])->name('v1.students.notes.store');
+
+        // ── Student Portal ───────────────────────────
+        Route::prefix('me')->group(function (): void {
+            Route::get('/attendance', [AttendanceController::class, 'studentAttendance'])->defaults('id', null)->name('v1.me.attendance');
+            Route::get('/ledger', [AttendanceController::class, 'studentLedger'])->name('v1.me.ledger');
+            Route::get('/grades', [GradeController::class, 'index'])->name('v1.me.grades');
+            Route::get('/excuses', [ExcuseRequestController::class, 'index'])->name('v1.me.excuses');
+            Route::post('/excuses', [ExcuseRequestController::class, 'store'])->name('v1.me.excuses.store');
+            Route::post('/deliverables', [SubmissionController::class, 'store'])->name('v1.me.submissions.store');
+            Route::get('/announcements', [AnnouncementController::class, 'myAnnouncements'])->name('v1.me.announcements');
+            Route::get('/progress', [AnalyticsController::class, 'myProgress'])->name('v1.me.progress');
         });
 
-        // — Submissions (Instructor)
-        Route::prefix('submissions')->group(function (): void {
-            Route::get('/', [SubmissionReviewController::class, 'index'])->name('v1.submissions.index');
-            Route::put('/{id}', [SubmissionReviewController::class, 'update'])->name('v1.submissions.update');
+        // ── Excuse Requests ──────────────────────────
+        Route::apiResource('excuses', ExcuseRequestController::class)->names('v1.excuses')->parameters(['excuses' => 'excuse']);
+        Route::put('/excuses/{excuse}/approve', [ExcuseRequestController::class, 'review'])->defaults('status', 'approved')->name('v1.excuses.approve');
+        Route::put('/excuses/{excuse}/reject', [ExcuseRequestController::class, 'review'])->defaults('status', 'rejected')->name('v1.excuses.reject');
 
-            // Complex Endpoint: Detailed breakdown for a specific student
-            Route::get('/students/{id}/grades', [SubmissionReviewController::class, 'studentGradesDetail'])->name('v1.submissions.student.grades');
-        });
-
-        // ── Engagements (ENG-3, ENG-4) ─────────────────
-        Route::get('/engagements', [EngagementController::class, 'index'])
-            ->name('v1.engagements.index');
-        Route::post('/engagements', [EngagementController::class, 'store'])
-            ->name('v1.engagements.store');
-        Route::get('/engagements/{engagement}', [EngagementController::class, 'show'])
-            ->name('v1.engagements.show');
-
-        // ── Sessions (ENG-4: delivered flag) ────────────
-        Route::patch('/sessions/{session}', [SessionController::class, 'update'])
-            ->name('v1.sessions.update');
-        // ── Announcements ────────────────────────────────
-        Route::post('/announcements', [AnnouncementController::class, 'store'])
-            ->name('v1.announcements.store');
-
-        // ── Attendance ───────────────────────────────────
-        Route::get('/students/{id}/attendance', [AttendanceController::class, 'studentAttendance'])
-            ->name('v1.students.attendance');
-
-        // ── Billing ───────────────────────────────────────
+        // ── Billing ──────────────────────────────────
         Route::prefix('billing')->group(function (): void {
-            Route::get('/branch', [BillingController::class, 'branchBilling'])
-                ->name('v1.billing.branch');
+            Route::get('/rollup', [BillingController::class, 'branchBilling'])->name('v1.billing.rollup');
+            Route::post('/rollup/generate', [BillingController::class, 'generate'])->name('v1.billing.generate');
+            Route::get('/instructors/{id}', [BillingController::class, 'instructorBilling'])->name('v1.billing.instructor');
         });
 
-        // excuse requests workflow (EXC-1, EXC-3, ATT-5)
-        Route::prefix('excuse-requests')->group(function (): void {
-            Route::get('/', [ExcuseRequestController::class, 'index'])
-                ->name('v1.excuse-requests.index');
-            Route::post('/', [ExcuseRequestController::class, 'store'])
-                ->name('v1.excuse-requests.store');
-            Route::get('/{excuse}', [ExcuseRequestController::class, 'show'])
-                ->name('v1.excuse-requests.show');
-            Route::patch('/{excuse}', [ExcuseRequestController::class, 'review'])
-                ->name('v1.excuse-requests.review');
-            Route::delete('/{excuse}', [ExcuseRequestController::class, 'destroy'])
-                ->name('v1.excuse-requests.destroy');
+        // ── Analytics ────────────────────────────────
+        Route::prefix('analytics')->group(function (): void {
+            Route::get('/branch', [AnalyticsController::class, 'branchAnalytics'])->name('v1.analytics.branch');
+            Route::get('/cohorts/{cohort}', [AnalyticsController::class, 'summary'])->name('v1.analytics.cohort');
+            Route::get('/lab-groups/{labGroup}', [AnalyticsController::class, 'labGroupAnalytics'])->name('v1.analytics.lab-group');
+            Route::get('/at-risk/{cohort}', [AnalyticsController::class, 'atRisk'])->name('v1.analytics.at-risk');
         });
+        Route::get('/students/{id}/analytics', [AnalyticsController::class, 'studentAnalytics'])->name('v1.students.analytics');
+        Route::get('/students/{id}/ledger', [AttendanceController::class, 'studentLedger'])->name('v1.students.ledger');
 
     });
 

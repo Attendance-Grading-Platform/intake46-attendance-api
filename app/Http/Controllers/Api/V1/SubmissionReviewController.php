@@ -57,6 +57,7 @@ class SubmissionReviewController extends Controller
 
     /**
      * Evaluate a submission by creating/updating a Grade record.
+     * ENG-2: Late penalty is auto-applied based on CourseComponent due_date.
      */
     public function update(Request $request, string $id)
     {
@@ -67,29 +68,54 @@ class SubmissionReviewController extends Controller
             'raw_max'   => 'required|numeric|min:1',
         ]);
 
+        // raw_score must not exceed raw_max
+        if ($validated['raw_score'] > $validated['raw_max']) {
+            return $this->errorResponse('raw_score cannot exceed raw_max.', 422);
+        }
+
         // CRIT-7: Authorize the act of Grading, not updating the submission
         $student = User::findOrFail($submission->student_id);
         $this->authorize('create', [\App\Models\Grade::class, $student]);
 
-        // CRIT-8: Use the validated raw_max, not the component weight
+        // ENG-2: Apply late penalty using CourseComponent.due_date vs submission.created_at
+        $dueDate     = $submission->courseComponent?->due_date;
+        $submittedAt = $submission->created_at ?? now();
+        $daysLate    = 0;
+
+        if ($dueDate) {
+            $daysLate = max(0, (int) now()->parse($submittedAt)
+                ->startOfDay()
+                ->diffInDays(now()->parse($dueDate)->startOfDay(), false));
+        }
+
+        $penaltyService  = new \App\Services\LatePenaltyService();
+        $finalScore      = $penaltyService->calculate((float) $validated['raw_score'], $daysLate);
+
+        // CRIT-8: Save the post-penalty score as raw_score for normalization pipeline
         $grade = \App\Models\Grade::updateOrCreate(
             [
-                'student_id' => $submission->student_id,
+                'student_id'          => $submission->student_id,
                 'course_component_id' => $submission->course_component_id,
             ],
             [
-                'graded_by' => $request->user()->id,
-                'raw_score' => $validated['raw_score'],
-                'raw_max'   => $validated['raw_max'],
+                'graded_by'  => $request->user()->id,
+                'raw_score'  => $finalScore,
+                'raw_max'    => $validated['raw_max'],
             ]
         );
 
-        // Fetch the submission again with its new grade attached for the frontend resource
         $submission->load('grade');
 
         return $this->successResponse(
-            new SubmissionReviewResource($submission),
-            'Submission graded successfully.'
+            [
+                'submission'       => new SubmissionReviewResource($submission),
+                'penalty_applied'  => [
+                    'days_late'    => $daysLate,
+                    'original_raw' => $validated['raw_score'],
+                    'final_score'  => $finalScore,
+                ],
+            ],
+            $daysLate > 0 ? "Graded with late penalty ({$daysLate} days late)." : 'Submission graded successfully.'
         );
     }
 

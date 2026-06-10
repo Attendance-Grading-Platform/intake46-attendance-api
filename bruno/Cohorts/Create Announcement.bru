@@ -1,0 +1,18 @@
+meta {
+  name: Create Announcement
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/v1/cohorts/1/announcements
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "title": "Welcome to Intake 46",
+    "body": "Welcome session starts tomorrow at 9 AM."
+  }
+}

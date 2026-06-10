@@ -62,6 +62,17 @@ class CohortController extends Controller
             'ended_at' => 'required|date|after:started_at',
         ]);
 
+        // LC-1: A track shall have at most one active cohort at any time.
+        $requestedStatus = $validated['status'] ?? 'active';
+        if ($requestedStatus === 'active') {
+            $alreadyActive = Cohort::where('track_id', $validated['track_id'])
+                ->where('status', 'active')
+                ->exists();
+            if ($alreadyActive) {
+                return $this->errorResponse('This track already has an active cohort.', 422);
+            }
+        }
+
         $cohort = Cohort::create($validated);
 
         return $this->successResponse($cohort, 'Cohort created successfully.', 201);

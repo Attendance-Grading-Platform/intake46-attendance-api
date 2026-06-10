@@ -44,4 +44,26 @@ class GrandTotalService
         // Returns the actual points earned out of the total weight
         return round($totalEarnedPoints, 2);
     }
+
+    /**
+     * Calculate the true Grand Total including the Attendance Ledger.
+     *
+     * Grand Total = Attendance Ledger balance + Sum of normalized course scores
+     *
+     * @see Section 6.1 of Vue_Laravel.md
+     */
+    public function calculateWithLedger(\App\Models\User $student, $grades): array
+    {
+        $courseTotal = $this->calculateGrandTotal($grades);
+
+        $ledger = $student->attendanceLedger;
+        $ledgerBalance = $ledger ? (int) $ledger->balance : 250;
+
+        return [
+            'ledger_balance'   => $ledgerBalance,
+            'courses_total'    => $courseTotal,
+            'grand_total'      => round($ledgerBalance + $courseTotal, 2),
+            'is_at_risk'       => $ledger ? $ledger->isAtRisk() : false,
+        ];
+    }
 }
