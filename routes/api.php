@@ -148,6 +148,8 @@ Route::prefix('v1')
         Route::patch('/sessions/{session}', [SessionController::class, 'update'])
             ->name('v1.sessions.update');
         // ── Announcements ────────────────────────────────
+        Route::get('/cohorts/{cohort}/announcements', [AnnouncementController::class, 'index'])
+            ->name('v1.announcements.index');
         Route::post('/announcements', [AnnouncementController::class, 'store'])
             ->name('v1.announcements.store');
 
