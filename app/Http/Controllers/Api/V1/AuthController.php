@@ -71,4 +71,19 @@ class AuthController extends Controller
 
         return $this->successResponse(null, 'Logged out successfully.');
     }
+
+    /**
+     * Get the authenticated user profile.
+     *
+     * GET /api/v1/auth/me
+     */
+    public function me(Request $request): JsonResponse
+    {
+        return $this->successResponse([
+            'id'    => $request->user()->id,
+            'name'  => $request->user()->name,
+            'email' => $request->user()->email,
+            'role'  => $request->user()->role,
+        ], 'Profile retrieved successfully.');
+    }
 }

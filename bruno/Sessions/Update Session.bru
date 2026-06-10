@@ -1,0 +1,21 @@
+meta {
+  name: Update Session
+  type: http
+  seq: 1
+}
+
+patch {
+  url: {{baseUrl}}/v1/sessions/1
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "delivered": true
+  }
+}

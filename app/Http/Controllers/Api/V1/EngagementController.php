@@ -31,10 +31,12 @@ class EngagementController extends Controller
         $validated = $request->validate([
             'cohort_id' => 'required|exists:cohorts,id',
             'instructor_id' => 'required|exists:users,id',
-            'type' => 'required|string',
+            'type' => 'required|in:lecture,lab,business_session',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
             'scheduled_hours' => 'required|integer|min:1', 
+            'days_of_week' => 'required|array',
+            'days_of_week.*' => 'integer|between:0,6', // 0 = Sunday
         ]);
 
         $engagement = Engagement::create([
@@ -43,11 +45,34 @@ class EngagementController extends Controller
             'start_date' => $validated['start_date'],
             'end_date' => $validated['end_date'],
             'scheduled_hours' => $validated['scheduled_hours'], 
+            'days_of_week' => $validated['days_of_week'],
         ]);
 
         $engagement->cohorts()->attach($validated['cohort_id']);
 
-        return $this->successResponse($engagement, 'Engagement created successfully.', 201);
+        // ── ENG-3 Automation: Provision Sessions ──────────────────────────────
+        $startDate = \Carbon\Carbon::parse($validated['start_date']);
+        $endDate = \Carbon\Carbon::parse($validated['end_date']);
+        $days = $validated['days_of_week'];
+
+        $sessions = [];
+        for ($date = $startDate->copy(); $date->lte($endDate); $date->addDay()) {
+            if (in_array($date->dayOfWeek, $days)) {
+                $sessions[] = [
+                    'engagement_id' => $engagement->id,
+                    'session_date' => $date->toDateString(),
+                    'delivered' => false,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
+        }
+
+        if (!empty($sessions)) {
+            \App\Models\EngagementSession::insert($sessions);
+        }
+
+        return $this->successResponse($engagement->load('sessions'), 'Engagement and sessions created successfully.', 201);
     }
 
     public function show(Engagement $engagement): JsonResponse

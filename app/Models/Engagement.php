@@ -28,12 +28,14 @@ class Engagement extends Model
         'start_date',
         'end_date',
         'scheduled_hours',
+        'days_of_week',
     ];
 
     protected $casts = [
         'start_date'      => 'date',
         'end_date'        => 'date',
         'scheduled_hours' => 'integer',
+        'days_of_week'    => 'array',
     ];
 
 /* ──────────────────────────────────────────────
