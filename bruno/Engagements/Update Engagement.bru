@@ -1,0 +1,17 @@
+meta {
+  name: Update Engagement
+  type: http
+  seq: 7
+}
+
+put {
+  url: {{baseUrl}}/v1/engagements/1
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "title": "Updated Engagement Name"
+  }
+}

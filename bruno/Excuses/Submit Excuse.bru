@@ -1,0 +1,17 @@
+meta {
+  name: Submit Excuse
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/v1/excuses
+  body: multipartForm
+  auth: inherit
+}
+
+body:multipart-form {
+  session_id: 1
+  reason: Was sick
+  attachment: @file(/path/to/doctor_note.pdf)
+}

@@ -61,4 +61,38 @@ class BillingController extends Controller
 
         return $this->successResponse($data, 'Billing data retrieved successfully.');
     }
+
+    /**
+     * BIL-1: Trigger fresh generation of billing snapshots for a cohort.
+     * Accessible by Track Admins or Branch Managers.
+     */
+    public function generate(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'cohort_id' => 'required|exists:cohorts,id',
+            'period'    => 'required|string|max:50', // e.g., "June 2026"
+        ]);
+
+        $cohort = \App\Models\Cohort::findOrFail($validated['cohort_id']);
+        $this->authorize('update', $cohort);
+
+        // Find all instructors associated with this cohort
+        $instructors = \App\Models\User::where('role', 'instructor')
+            ->whereHas('engagements', function ($q) use ($cohort) {
+                $q->where('cohort_id', $cohort->id);
+            })->get();
+
+        $service = new \App\Services\BillingSnapshotService();
+        $count = 0;
+
+        foreach ($instructors as $instructor) {
+            $service->generate($instructor, $cohort, $validated['period']);
+            $count++;
+        }
+
+        return $this->successResponse(
+            ['generated_count' => $count],
+            "Created {$count} billing snapshots for cohort: {$cohort->name}."
+        );
+    }
 }

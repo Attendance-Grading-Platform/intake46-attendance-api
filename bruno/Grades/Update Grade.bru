@@ -1,0 +1,18 @@
+meta {
+  name: Update Grade
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{baseUrl}}/v1/grades/1
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "raw_score": 90,
+    "raw_max": 100
+  }
+}

@@ -64,4 +64,40 @@ class GradeController extends Controller
             'Grades retrieved successfully.'
         );
     }
+
+    /**
+     * GRD-6: Override a student's grade with a mandatory audit note.
+     * Only accessible to Track Admins (enforced via Policy/Role).
+     */
+    public function override(Request $request, Grade $grade): JsonResponse
+    {
+        // 1. Policy Authorization (requires track_admin role)
+        $this->authorize('update', $grade);
+
+        $validated = $request->validate([
+            'new_score' => 'required|numeric|min:0',
+            'note'      => 'required|string|min:5|max:1000',
+        ]);
+
+        // Guard: Prevent redundant overrides with same value
+        if ((float) $grade->raw_score === (float) $validated['new_score']) {
+            return $this->errorResponse('New score is identical to current score.', 422);
+        }
+
+        // 2. Audit Trail: Always preserve the FIRST original value
+        // if this is the first override.
+        $originalValue = $grade->original_value ?? $grade->raw_score;
+
+        $grade->update([
+            'original_value' => $originalValue,
+            'raw_score'      => $validated['new_score'],
+            'overridden_by'  => $request->user()->id,
+            'override_note'  => $validated['note'],
+        ]);
+
+        return $this->successResponse(
+            new GradeResource($grade->fresh()),
+            'Grade successfully overridden. Record updated in audit trail.'
+        );
+    }
 }

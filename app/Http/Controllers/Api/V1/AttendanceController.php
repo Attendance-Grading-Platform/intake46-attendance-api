@@ -19,9 +19,11 @@ class AttendanceController extends Controller
      *
      * GET /api/v1/students/{id}/attendance
      */
-    public function studentAttendance(Request $request, int $id): JsonResponse
+    public function studentAttendance(Request $request, ?int $id = null): JsonResponse
     {
+        $id = $id ?? $request->user()->id;
         $student = User::where('role', 'student')->findOrFail($id);
+
 
         // Secure: Delegates to UserPolicy@view to ensure the requester
         // is either the student themselves, their track admin, or branch manager.

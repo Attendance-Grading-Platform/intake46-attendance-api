@@ -1,0 +1,17 @@
+meta {
+  name: Add Note
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/v1/students/1/notes
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "note": "Participated very well in the project phase."
+  }
+}
