@@ -29,17 +29,19 @@ class CohortController extends Controller
         $user = $request->user();
         $cohorts = collect();
 
+        $with = ['track', 'trackAdmins'];
+
         // Role-based visibility filtering
         if ($user->role === 'branch_manager') {
-            $cohorts = Cohort::all();
+            $cohorts = Cohort::with($with)->withCount('students')->get();
         } elseif ($user->role === 'track_admin') {
-            $cohorts = $user->administeredCohorts()->get();
+            $cohorts = $user->administeredCohorts()->with($with)->withCount('students')->get();
         } elseif ($user->role === 'instructor') {
-            $cohorts = Cohort::whereHas('engagements', function ($query) use ($user) {
+            $cohorts = Cohort::with($with)->withCount('students')->whereHas('engagements', function ($query) use ($user) {
                 $query->where('engagements.instructor_id', $user->id);
             })->get();
         } elseif ($user->role === 'student') {
-            $cohorts = $user->enrolledCohorts()->get();
+            $cohorts = $user->enrolledCohorts()->with($with)->withCount('students')->get();
         }
 
         return $this->successResponse($cohorts, 'Cohorts retrieved successfully.');
@@ -86,6 +88,9 @@ class CohortController extends Controller
     public function show(Cohort $cohort): JsonResponse
     {
         $this->authorize('view', $cohort);
+
+        $cohort->load(['track', 'courses.components']);
+        $cohort->loadCount('students');
 
         return $this->successResponse($cohort, 'Cohort retrieved successfully.');
     }
