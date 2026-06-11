@@ -25,7 +25,7 @@ class ExcuseRequestController extends Controller
 
         $user = $request->user();
 
-        $query = ExcuseRequest::with(['student:id,name,email', 'session', 'reviewer:id,name']);
+        $query = ExcuseRequest::with(['student:id,name,email', 'student.enrolledLabGroups:id,name', 'session.engagement', 'reviewer:id,name']);
 
         // student see only his own requests
         if ($user->role === 'student') {
@@ -63,7 +63,7 @@ class ExcuseRequestController extends Controller
         // save file if student upload attachment
         $attachmentPath = null;
         if ($request->hasFile('attachment')) {
-            $attachmentPath = $request->file('attachment')->store('excuse-attachments', 'local');
+            $attachmentPath = $request->file('attachment')->store('excuse-attachments', 'public');
         }
 
         $excuse = ExcuseRequest::create([
@@ -163,7 +163,7 @@ class ExcuseRequestController extends Controller
 
         // delete attachment file from storage if exist
         if ($excuse->attachment_path) {
-            Storage::disk('local')->delete($excuse->attachment_path);
+            Storage::disk('public')->delete($excuse->attachment_path);
         }
 
         $excuse->delete();
