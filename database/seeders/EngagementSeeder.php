@@ -19,6 +19,19 @@ class EngagementSeeder extends Seeder
             return;
         }
 
+        // Ensure static instructor always has an active engagement for dev testing
+        $staticInstructor = User::where('email', 'instructor@iti.test')->first();
+        if ($staticInstructor && !$cohorts->isEmpty()) {
+            $e = Engagement::create([
+                'instructor_id'   => $staticInstructor->id,
+                'type'            => 'lab',
+                'start_date'      => Carbon::today()->subMonths(1),
+                'end_date'        => Carbon::today()->addMonths(2),
+                'scheduled_hours' => 4,
+            ]);
+            $e->cohorts()->attach($cohorts->first()->id);
+        }
+
         for ($i = 0; $i < 15; $i++) {
             $engagement = Engagement::create([
                 'instructor_id'   => $instructors->random()->id,

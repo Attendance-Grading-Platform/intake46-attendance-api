@@ -53,32 +53,40 @@ Route::prefix('auth')->middleware('throttle:5,1')->group(function () {
 // 2. Protected — Versioned API (v1)
 // ──────────────────────────────────────────────────────────
 Route::prefix('v1')
-    ->middleware(['auth:sanctum', \App\Http\Middleware\CheckAccountExpiry::class, \App\Http\Middleware\CheckEngagementWindow::class])
+    ->middleware(['auth:sanctum', \App\Http\Middleware\CheckAccountExpiry::class])
     ->group(function (): void {
 
         // ── Auth & User Management ───────────────────
         Route::prefix('auth')->group(function (): void {
             Route::get('/me', [AuthController::class, 'me'])->name('v1.auth.me');
             Route::post('/logout', [AuthController::class, 'logout'])->name('v1.auth.logout');
-            
-            // New user management endpoints
-            Route::get('/users', [AuthController::class, 'index'])->name('v1.auth.users.index');
-            Route::post('/users', [AuthController::class, 'store'])->name('v1.auth.users.store');
-            Route::get('/users/{user}', [AuthController::class, 'show'])->name('v1.auth.users.show');
-            Route::put('/users/{user}', [AuthController::class, 'update'])->name('v1.auth.users.update');
-            Route::delete('/users/{user}', [AuthController::class, 'destroy'])->name('v1.auth.users.destroy');
         });
 
-        // ── Tracks ───────────────────────────────────────
+        // ── Viewing Routes (Bypass Engagement Window) ──
         Route::get('/tracks', [TrackController::class, 'index'])->name('v1.tracks.index');
         Route::get('/tracks/{id}/cohorts', [CohortController::class, 'trackCohorts'])->name('v1.tracks.cohorts');
-
-        // ── Cohorts ───────────────────────────────
-        Route::apiResource('cohorts', CohortController::class)->except(['destroy']);
-        Route::delete('/cohorts/{cohort}', [CohortController::class, 'destroy'])->name('v1.cohorts.destroy');
-        Route::put('/cohorts/{cohort}/close', [CohortController::class, 'close'])->name('v1.cohorts.close');
-        Route::post('/cohorts/{cohort}/enroll', [CohortController::class, 'enroll'])->name('v1.cohorts.enroll');
+        Route::get('/cohorts', [CohortController::class, 'index'])->name('v1.cohorts.index');
+        Route::get('/cohorts/{cohort}', [CohortController::class, 'show'])->name('v1.cohorts.show');
         Route::get('/cohorts/{cohort}/students', [CohortController::class, 'students'])->name('v1.cohorts.students');
+
+        // ── Engagement-Restricted Core ────────────────
+        Route::middleware([\App\Http\Middleware\CheckEngagementWindow::class])->group(function (): void {
+            
+            Route::prefix('auth')->group(function (): void {
+                // User management endpoints (CRUDS) still restricted
+                Route::get('/users', [AuthController::class, 'index'])->name('v1.auth.users.index');
+                Route::post('/users', [AuthController::class, 'store'])->name('v1.auth.users.store');
+                Route::get('/users/{user}', [AuthController::class, 'show'])->name('v1.auth.users.show');
+                Route::put('/users/{user}', [AuthController::class, 'update'])->name('v1.auth.users.update');
+                Route::delete('/users/{user}', [AuthController::class, 'destroy'])->name('v1.auth.users.destroy');
+            });
+
+            // ── Cohorts Management ───────────────────
+            Route::post('/cohorts', [CohortController::class, 'store'])->name('v1.cohorts.store');
+            Route::put('/cohorts/{cohort}', [CohortController::class, 'update'])->name('v1.cohorts.update');
+            Route::delete('/cohorts/{cohort}', [CohortController::class, 'destroy'])->name('v1.cohorts.destroy');
+            Route::put('/cohorts/{cohort}/close', [CohortController::class, 'close'])->name('v1.cohorts.close');
+            Route::post('/cohorts/{cohort}/enroll', [CohortController::class, 'enroll'])->name('v1.cohorts.enroll');
         Route::get('/cohorts/{cohort}/grades', [CohortController::class, 'grades'])->name('v1.cohorts.grades');
         Route::post('/cohorts/{cohort}/assign-admin', [CohortController::class, 'assignAdmin'])->name('v1.cohorts.assign-admin');
         Route::get('/cohorts/{cohort}/lab-groups', [LabGroupController::class, 'index'])->name('v1.lab-groups.index');
@@ -174,7 +182,7 @@ Route::prefix('v1')
         Route::get('/students/{id}/analytics', [AnalyticsController::class, 'studentAnalytics'])->name('v1.students.analytics');
         Route::get('/students/{id}/ledger', [AttendanceController::class, 'studentLedger'])->name('v1.students.ledger');
         Route::get('/students/{id}/attendance', [AttendanceController::class, 'studentAttendance'])->name('v1.students.attendance');
-
+        });
     });
 
 // ──────────────────────────────────────────────────────────
