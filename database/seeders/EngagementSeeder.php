@@ -47,6 +47,7 @@ class EngagementSeeder extends Seeder
         }
 
         for ($i = 0; $i < self::ENGAGEMENT_COUNT; $i++) {
+
             $engagement = Engagement::create([
                 'instructor_id'     => $instructors->random()->id,
                 'type'              => ['lecture', 'lab', 'business'][array_rand(['lecture', 'lab', 'business'])],
