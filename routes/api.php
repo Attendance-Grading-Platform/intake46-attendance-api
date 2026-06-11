@@ -173,6 +173,7 @@ Route::prefix('v1')
         });
         Route::get('/students/{id}/analytics', [AnalyticsController::class, 'studentAnalytics'])->name('v1.students.analytics');
         Route::get('/students/{id}/ledger', [AttendanceController::class, 'studentLedger'])->name('v1.students.ledger');
+        Route::get('/students/{id}/attendance', [AttendanceController::class, 'studentAttendance'])->name('v1.students.attendance');
 
     });
 
