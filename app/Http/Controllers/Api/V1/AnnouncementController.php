@@ -117,7 +117,7 @@ class AnnouncementController extends Controller
             $cohortIds = Cohort::pluck('id')->toArray();
         }
 
-        $announcements = Announcement::whereIn('cohort_id', $cohortIds)
+        $announcements = Announcement::with('author:id,name,role')->whereIn('cohort_id', $cohortIds)
             ->latest('published_at')
             ->get();
 
