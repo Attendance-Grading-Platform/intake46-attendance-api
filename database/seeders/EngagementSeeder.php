@@ -27,15 +27,6 @@ class EngagementSeeder extends Seeder
             return;
         }
 
-<<<<<<< Updated upstream
-        for ($i = 0; $i < 15; $i++) {
-            $engagement = Engagement::create([
-                'instructor_id'   => $instructors->random()->id,
-                'type'            => ['lecture', 'lab', 'business_session'][array_rand(['lecture', 'lab', 'business_session'])],
-                'start_date'      => Carbon::today()->subDays(rand(10, 30)),
-                'end_date'        => Carbon::today()->addDays(rand(10, 60)),
-                'scheduled_hours' => rand(2, 6),
-=======
         $now = now();
 
         $staticInstructor = User::where('email', 'amira.khaled@iti.edu.eg')->first();
@@ -63,7 +54,6 @@ class EngagementSeeder extends Seeder
                 'end_date'          => Carbon::today()->addDays(rand(10, 60)),
                 'scheduled_hours'   => rand(2, 6),
                 'hours_per_session' => rand(2, 6),
->>>>>>> Stashed changes
             ]);
 
             $attachedCohort = $cohorts->random();
@@ -77,23 +67,7 @@ class EngagementSeeder extends Seeder
                     'delivered'     => true,
                 ]);
 
-<<<<<<< Updated upstream
-                // Create attendance records for all students in the attached cohorts
-                foreach ($attachedCohorts as $cohort) {
-                    foreach ($cohort->students as $student) {
-                        // 85% chance of being present, 15% absent
-                        $isPresent = (rand(1, 100) <= 85);
-                        \App\Models\AttendanceRecord::create([
-                            'session_id' => $session->id,
-                            'student_id' => $student->id,
-                            'arrived_at' => $isPresent ? $sessionDate->copy()->setTime(9, rand(0, 20)) : null,
-                            'left_at'    => $isPresent ? $sessionDate->copy()->setTime(13, 0) : null,
-                        ]);
-                    }
-                }
-=======
                 $this->insertAttendanceRecords($session->id, collect([$attachedCohort]), $sessionDate, $now);
->>>>>>> Stashed changes
             }
         }
 
