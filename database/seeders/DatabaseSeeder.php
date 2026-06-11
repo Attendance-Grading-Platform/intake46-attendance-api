@@ -60,8 +60,6 @@ class DatabaseSeeder extends Seeder
             // Scan records + ledger deductions + transactions
             // Creates at-risk students (ledger < 150)
             AttendanceLedgerSeeder::class,
-<<<<<<< Updated upstream
-=======
 
             // ── Step 6: Excuses ──────────────────────────
             // requested / approved / rejected states
@@ -83,7 +81,6 @@ class DatabaseSeeder extends Seeder
 
             // ── Step 10: Billing ──────────────────────────
             BillingSeeder::class,
->>>>>>> Stashed changes
         ]);
     }
 }
