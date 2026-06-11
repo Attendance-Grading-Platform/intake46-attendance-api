@@ -66,11 +66,34 @@ class StudentTagPolicy
      * * * GRD-7: Instructors tag students in their lab groups. Track Admins tag students in their cohorts.
      * * * Students cannot create tags.
      */
-    public function create(User $user): Response
+    public function create(User $user, User $student): Response
     {
-        return in_array($user->role, ['branch_manager', 'track_admin', 'instructor'])
-            ? Response::allow()
-            : Response::deny('GRD-7: Only instructors and Track Admins can create student tags.');
+        // Branch Manager Context: Global authority
+        if ($user->role === 'branch_manager') {
+            return Response::allow();
+        }
+
+        // Track Admin Context
+        if ($user->role === 'track_admin') {
+            return $user->administeredCohorts()
+                ->whereHas('students', function ($query) use ($student) {
+                    $query->where('users.id', $student->id);
+                })->exists()
+                ? Response::allow()
+                : Response::deny('You can only tag students in your assigned cohorts.');
+        }
+
+        // Instructor Context
+        if ($user->role === 'instructor') {
+            return $user->instructedLabGroups()
+                ->whereHas('students', function ($query) use ($student) {
+                    $query->where('users.id', $student->id);
+                })->exists()
+                ? Response::allow()
+                : Response::deny('You can only tag students in your assigned lab groups.');
+        }
+
+        return Response::deny('GRD-7: Only instructors and Track Admins can create student tags.');
     }
 
     /**

@@ -45,20 +45,8 @@ class StudentTagController extends Controller
     {
         $student = User::where('role', 'student')->findOrFail($studentId);
         
-        // Security: Instructor can only tag students in their assigned lab groups
-        if ($request->user()->role === 'instructor') {
-            $isMyStudent = $request->user()->instructedLabGroups()
-                ->whereHas('students', function ($q) use ($student) {
-                    $q->where('users.id', $student->id);
-                })->exists();
-
-            if (!$isMyStudent) {
-                return $this->errorResponse('Security: You can only tag students in your assigned lab groups.', 403);
-            }
-        }
-
-        // Policy handles Track Admin / Branch Manager logic
-        $this->authorize('update', $student);
+        // Policy handles Instructor / Track Admin / Branch Manager logic
+        $this->authorize('create', [StudentTag::class, $student]);
 
         $validated = $request->validate([
             'tag'  => 'required|string|max:50',
@@ -67,7 +55,7 @@ class StudentTagController extends Controller
 
         $tag = StudentTag::create([
             'student_id' => $student->id,
-            'creator_id' => $request->user()->id,
+            'created_by' => $request->user()->id,
             'tag'        => $validated['tag'],
             'note'       => $validated['note'],
         ]);
@@ -109,19 +97,8 @@ class StudentTagController extends Controller
     {
         $student = User::where('role', 'student')->findOrFail($id);
 
-        // instructor can only add notes for students in his lab group
-        if ($request->user()->role == 'instructor') {
-            $isMyStudent = $request->user()->instructedLabGroups()
-                ->whereHas('students', function ($q) use ($student) {
-                    $q->where('users.id', $student->id);
-                })->exists();
-
-            if (!$isMyStudent) {
-                return $this->errorResponse('You can only add notes to students in your lab groups.', 403);
-            }
-        }
-
-        $this->authorize('update', $student);
+        // Policy handles Instructor / Track Admin / Branch Manager logic
+        $this->authorize('create', [StudentTag::class, $student]);
 
         $validated = $request->validate([
             'note' => 'required|string|max:2000',
@@ -136,7 +113,7 @@ class StudentTagController extends Controller
 
         $noteRecord = StudentTag::create([
             'student_id' => $student->id,
-            'creator_id' => $request->user()->id,
+            'created_by' => $request->user()->id,
             'tag' => $tagLabel,
             'note' => $validated['note'],
         ]);
