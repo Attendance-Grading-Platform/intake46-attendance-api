@@ -21,22 +21,24 @@ class AcademicStructureSeeder extends Seeder
         ]);
 
         // cohort must be active now
-        $cohort = Cohort::create([
+        $cohort = Cohort::firstOrCreate([
             'name' => 'Intake 46 - PHP Laravel',
+        ], [
             'track_id' => $track->id,
             'started_at' => now()->subDays(15),
             'ended_at' => now()->addMonths(3),
         ]);
 
+        $admin = \App\Models\User::where('email', 'admin@iti.test')->first();
+        if ($admin) {
+            $cohort->trackAdmins()->syncWithoutDetaching([$admin->id]);
+        }
         $testStudent = \App\Models\User::where('email', 'student@iti.test')->first();
         if ($testStudent) {
             $cohort->students()->syncWithoutDetaching([$testStudent->id => ['enrolled_at' => now()]]);
         }
 
-        $admin = \App\Models\User::where('email', 'admin@iti.test')->first();
         if ($admin) {
-            $cohort->trackAdmins()->syncWithoutDetaching([$admin->id]);
-
             // Seed Announcements for student dashboard
             \App\Models\Announcement::create([
                 'cohort_id'    => $cohort->id,

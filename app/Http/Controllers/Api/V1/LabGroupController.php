@@ -44,7 +44,7 @@ class LabGroupController extends Controller
         $this->authorize('update', $labGroup);
 
         $validated = $request->validate([
-            'user_ids' => 'required|array',
+            'user_ids' => 'present|array',
             'user_ids.*' => 'exists:users,id',
         ]);
 
@@ -71,7 +71,7 @@ class LabGroupController extends Controller
         $this->authorize('update', $labGroup);
 
         $validated = $request->validate([
-            'user_ids' => 'required|array',
+            'user_ids' => 'present|array',
             'user_ids.*' => 'exists:users,id',
         ]);
 
