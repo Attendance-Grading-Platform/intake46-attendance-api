@@ -60,7 +60,6 @@ class DatabaseSeeder extends Seeder
             // Scan records + ledger deductions + transactions
             // Creates at-risk students (ledger < 150)
             AttendanceLedgerSeeder::class,
-
             // ── Step 6: Excuses ──────────────────────────
             // requested / approved / rejected states
             ExcuseSeeder::class,
@@ -83,6 +82,7 @@ class DatabaseSeeder extends Seeder
 
             // ── Step 11: Engagement module demo scenario ──
             EngagementModuleSeeder::class,
+
         ]);
     }
 }
