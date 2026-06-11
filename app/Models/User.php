@@ -98,6 +98,11 @@ class User extends Authenticatable
         return $this->hasMany(Grade::class, 'student_id');
     }
 
+    public function tags(): HasMany
+    {
+        return $this->hasMany(StudentTag::class, 'student_id');
+    }
+
     /**
      * ANL-1/ANL-2: Determine if a student is at risk.
      * Criteria: Attendance Ledger < 150 OR any normalized course grade < 60.

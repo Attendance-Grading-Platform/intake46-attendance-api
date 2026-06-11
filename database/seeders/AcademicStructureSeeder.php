@@ -28,6 +28,11 @@ class AcademicStructureSeeder extends Seeder
             'ended_at' => now()->addMonths(3),
         ]);
 
+        $admin = \App\Models\User::where('email', 'admin@iti.test')->first();
+        if ($admin) {
+            $cohort->trackAdmins()->syncWithoutDetaching([$admin->id]);
+        }
+
         $courses = ['Laravel Advanced', 'React & Tailwind', 'Linux Administration'];
 
         foreach ($courses as $courseName) {
