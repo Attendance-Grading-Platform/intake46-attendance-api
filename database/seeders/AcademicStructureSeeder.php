@@ -28,11 +28,32 @@ class AcademicStructureSeeder extends Seeder
             'ended_at' => now()->addMonths(3),
         ]);
 
+        $testStudent = \App\Models\User::where('email', 'student@iti.test')->first();
+        if ($testStudent) {
+            $cohort->students()->syncWithoutDetaching([$testStudent->id => ['enrolled_at' => now()]]);
+        }
+
         $admin = \App\Models\User::where('email', 'admin@iti.test')->first();
         if ($admin) {
             $cohort->trackAdmins()->syncWithoutDetaching([$admin->id]);
-        }
 
+            // Seed Announcements for student dashboard
+            \App\Models\Announcement::create([
+                'cohort_id'    => $cohort->id,
+                'author_id'    => $admin->id,
+                'title'        => 'Welcome to Intake 46!',
+                'body'         => 'We are excited to welcome you all to the Full Stack Web Development track. Please review the schedule and make sure your local dev environment is ready.',
+                'published_at' => now()->subDays(5),
+            ]);
+
+            \App\Models\Announcement::create([
+                'cohort_id'    => $cohort->id,
+                'author_id'    => $admin->id,
+                'title'        => 'Advanced Laravel Session Rescheduled',
+                'body'         => 'The session on Advanced Laravel Design Patterns has been rescheduled to tomorrow at 9:00 AM. Attendance is mandatory.',
+                'published_at' => now()->subDays(1),
+            ]);
+        }
         $courses = ['Laravel Advanced', 'React & Tailwind', 'Linux Administration'];
 
         foreach ($courses as $courseName) {
