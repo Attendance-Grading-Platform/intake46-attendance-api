@@ -96,7 +96,13 @@ class AuthController extends Controller
     {
         $this->authorize('viewAny', User::class);
 
-        $users = User::latest()->paginate(20);
+        $query = User::latest();
+
+        if ($request->has('role')) {
+            $query->where('role', $request->role);
+        }
+
+        $users = $query->get();
         return $this->successResponse($users, 'Users retrieved successfully.');
     }
 

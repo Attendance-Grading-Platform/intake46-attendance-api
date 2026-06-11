@@ -1,0 +1,47 @@
+[90m= [39m[
+    {#8138
+      +"[1mcolumn_name[22m": [32m"[39m[32mid[39m[32m"[39m,
+    },
+    {#8139
+      +"[1mcolumn_name[22m": [32m"[39m[32mname[39m[32m"[39m,
+    },
+    {#8140
+      +"[1mcolumn_name[22m": [32m"[39m[32memail[39m[32m"[39m,
+    },
+    {#8135
+      +"[1mcolumn_name[22m": [32m"[39m[32memail_verified_at[39m[32m"[39m,
+    },
+    {#8111
+      +"[1mcolumn_name[22m": [32m"[39m[32mpassword[39m[32m"[39m,
+    },
+    {#8134
+      +"[1mcolumn_name[22m": [32m"[39m[32mrole[39m[32m"[39m,
+    },
+    {#8133
+      +"[1mcolumn_name[22m": [32m"[39m[32mexpiry_date[39m[32m"[39m,
+    },
+    {#8132
+      +"[1mcolumn_name[22m": [32m"[39m[32mis_active[39m[32m"[39m,
+    },
+    {#8131
+      +"[1mcolumn_name[22m": [32m"[39m[32mcompensation_type[39m[32m"[39m,
+    },
+    {#8167
+      +"[1mcolumn_name[22m": [32m"[39m[32mhourly_rate[39m[32m"[39m,
+    },
+    {#8168
+      +"[1mcolumn_name[22m": [32m"[39m[32mfixed_salary[39m[32m"[39m,
+    },
+    {#8169
+      +"[1mcolumn_name[22m": [32m"[39m[32mremember_token[39m[32m"[39m,
+    },
+    {#8170
+      +"[1mcolumn_name[22m": [32m"[39m[32mcreated_at[39m[32m"[39m,
+    },
+    {#8171
+      +"[1mcolumn_name[22m": [32m"[39m[32mupdated_at[39m[32m"[39m,
+    },
+    {#8172
+      +"[1mcolumn_name[22m": [32m"[39m[32mdeleted_at[39m[32m"[39m,
+    },
+  ]
