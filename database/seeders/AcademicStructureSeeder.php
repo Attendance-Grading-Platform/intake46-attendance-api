@@ -33,7 +33,6 @@ class AcademicStructureSeeder extends Seeder
         if ($admin) {
             $cohort->trackAdmins()->syncWithoutDetaching([$admin->id]);
         }
-
         $testStudent = \App\Models\User::where('email', 'student@iti.test')->first();
         if ($testStudent) {
             $cohort->students()->syncWithoutDetaching([$testStudent->id => ['enrolled_at' => now()]]);
