@@ -194,10 +194,11 @@ class CohortController extends Controller
         // If they are authorized to view the cohort, they can see its roster
         $this->authorize('view', $cohort);
 
-        $students = $cohort->students;
+        $students = $cohort->students()->with(['enrolledLabGroups', 'tags'])->get();
 
         return $this->successResponse($students, 'Cohort roster retrieved successfully.');
     }
+
 
     /**
      * Enroll a student into a cohort.
