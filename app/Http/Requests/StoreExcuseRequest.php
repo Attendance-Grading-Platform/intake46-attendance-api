@@ -90,6 +90,7 @@ class StoreExcuseRequest extends FormRequest
                         'You have already submitted an excuse request for this session.'
                     );
                 }
+
                 // Check if the student was actually marked absent
                 $isAbsent = \App\Models\AttendanceRecord::where('student_id', $this->user()->id)
                     ->where('session_id', $this->input('session_id'))
