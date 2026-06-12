@@ -60,9 +60,6 @@ class DatabaseSeeder extends Seeder
             // Scan records + ledger deductions + transactions
             // Creates at-risk students (ledger < 150)
             AttendanceLedgerSeeder::class,
-            // ── Step 6: Excuses ──────────────────────────
-            // requested / approved / rejected states
-            ExcuseSeeder::class,
             // ── Step 7: Grades ───────────────────────────
             // Raw scores → normalized → grand total
             // Overrides with notes
@@ -75,14 +72,15 @@ class DatabaseSeeder extends Seeder
             SubmissionSeeder::class,
 
             // ── Step 9: Announcements ─────────────────────
+            // Post-it style announcements for students
             AnnouncementSeeder::class,
 
             // ── Step 10: Billing ──────────────────────────
+            // Tracking billable hours for instructors
             BillingSeeder::class,
 
             // ── Step 11: Engagement module demo scenario ──
             EngagementModuleSeeder::class,
-
         ]);
     }
 }

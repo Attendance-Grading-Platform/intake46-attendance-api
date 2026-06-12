@@ -34,7 +34,6 @@ class Engagement extends Model
         'days_of_week',
         'daily_start_time',
         'daily_end_time',
-
     ];
 
     protected $casts = [
@@ -45,7 +44,6 @@ class Engagement extends Model
         'days_of_week'      => 'array',
         'daily_start_time'  => 'string',
         'daily_end_time'    => 'string',
-
     ];
 
 /* ──────────────────────────────────────────────
