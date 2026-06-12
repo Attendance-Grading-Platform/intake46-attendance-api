@@ -4,7 +4,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     /**
      * Run the migrations.
      */
@@ -12,12 +13,19 @@ return new class extends Migration {
     {
         Schema::create('excuse_requests', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('student_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('session_id')->constrained('engagement_sessions')->cascadeOnDelete();
+            $table->foreignId('student_id')
+                  ->constrained('users')
+                  ->cascadeOnDelete();
+            $table->foreignId('session_id')
+                  ->constrained('engagement_sessions')
+                  ->cascadeOnDelete();
             $table->enum('status', ['requested', 'approved', 'rejected'])->default('requested');
-            $table->text('reason');
+            $table->text('reason')->nullable();
             $table->string('attachment_path')->nullable();
-            $table->foreignId('reviewed_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('reviewed_by')
+                  ->nullable()
+                  ->constrained('users')
+                  ->nullOnDelete();
             $table->timestamp('reviewed_at')->nullable();
             $table->timestamps();
         });

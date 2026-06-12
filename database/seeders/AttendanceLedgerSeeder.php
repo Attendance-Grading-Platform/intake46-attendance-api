@@ -13,9 +13,13 @@ class AttendanceLedgerSeeder extends Seeder
         $students = User::where('role', 'student')->get();
 
         foreach ($students as $student) {
+            $cohortId = $student->enrolledCohorts()->first()?->id ?? \App\Models\Cohort::first()?->id ?? 1;
             AttendanceLedger::firstOrCreate(
                 ['student_id' => $student->id],
-                ['balance' => AttendanceLedger::INITIAL_BALANCE]
+                [
+                    'cohort_id' => $cohortId,
+                    'balance' => AttendanceLedger::INITIAL_BALANCE
+                ]
             );
         }
     }

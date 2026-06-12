@@ -18,6 +18,9 @@ return new class extends Migration
                   ->unique()               // One ledger per student
                   ->constrained('users')
                   ->cascadeOnDelete();
+            $table->foreignId('cohort_id')
+                  ->constrained('cohorts')
+                  ->cascadeOnDelete();
             $table->integer('balance')->default(250);
             $table->timestamps();
         });

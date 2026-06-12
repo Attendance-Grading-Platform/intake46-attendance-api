@@ -38,13 +38,30 @@ class EngagementService
     {
         return DB::transaction(function () use ($data, $daysOfWeek): array {
 
+            // Calculate the exact dates for sessions first
+            $sessionDates = [];
+            $period = CarbonPeriod::create($data['start_date'], $data['end_date']);
+            foreach ($period as $date) {
+                if (in_array($date->dayOfWeek, $daysOfWeek, true)) {
+                    $sessionDates[] = $date->toDateString();
+                }
+            }
+
+            // Calculate hours per session
+            $sessionCount = count($sessionDates);
+            $hoursPerSession = $sessionCount > 0 ? ($data['scheduled_hours'] / $sessionCount) : 0;
+
             // ── 1. Create the Engagement record ──────────────
             $engagement = Engagement::create([
-                'instructor_id'   => $data['instructor_id'],
-                'type'            => $data['type'],
-                'start_date'      => $data['start_date'],
-                'end_date'        => $data['end_date'],
-                'scheduled_hours' => $data['scheduled_hours'],
+                'instructor_id'     => $data['instructor_id'],
+                'type'              => $data['type'],
+                'start_date'        => $data['start_date'],
+                'end_date'          => $data['end_date'],
+                'scheduled_hours'   => $data['scheduled_hours'],
+                'hours_per_session' => $hoursPerSession,
+                'days_of_week'      => $daysOfWeek,
+                'daily_start_time'  => $data['daily_start_time'] ?? null,
+                'daily_end_time'    => $data['daily_end_time'] ?? null,
             ]);
 
             if (isset($data['cohort_id'])) {
@@ -104,6 +121,8 @@ class EngagementService
                     EngagementSession::create([
                         'engagement_id' => $engagement->id,
                         'session_date'  => $date->toDateString(),
+                        'start_time'    => $engagement->daily_start_time,
+                        'end_time'      => $engagement->daily_end_time,
                         'delivered'     => false,
                     ])
                 );
