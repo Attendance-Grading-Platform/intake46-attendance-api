@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\Cohort;
+use App\Http\Requests\StoreEngagementRequest;
 use App\Models\Engagement;
+use App\Services\EngagementService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,44 +16,57 @@ class EngagementController extends Controller
 {
     use ApiResponse;
 
-    public function index(Cohort $cohort): JsonResponse
+    public function __construct(protected EngagementService $engagementService) {}
+
+    public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Engagement::class);
 
-        $engagements = $cohort->engagements()->get();
+        $engagements = Engagement::with(['instructor:id,name,email', 'cohorts'])
+            ->when($request->cohort_id, fn ($q) => $q->whereHas('cohorts', fn ($sq) => $sq->where('cohorts.id', $request->cohort_id)))
+            ->when($request->instructor_id, fn ($q) => $q->where('instructor_id', $request->instructor_id))
+            ->when($request->type, fn ($q) => $q->where('type', $request->type))
+            ->orderByDesc('start_date')
+            ->get();
 
         return $this->successResponse($engagements, 'Engagements retrieved successfully.');
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreEngagementRequest $request): JsonResponse
     {
         $this->authorize('create', Engagement::class);
 
-        $validated = $request->validate([
-            'cohort_id' => 'required|exists:cohorts,id',
-            'instructor_id' => 'required|exists:users,id',
-            'type' => 'required|string',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after_or_equal:start_date',
-            'scheduled_hours' => 'required|integer|min:1', 
-        ]);
+        $validated  = $request->validated();
+        $daysOfWeek = $validated['days_of_week'];
 
-        $engagement = Engagement::create([
-            'instructor_id' => $validated['instructor_id'],
-            'type' => $validated['type'],
-            'start_date' => $validated['start_date'],
-            'end_date' => $validated['end_date'],
-            'scheduled_hours' => $validated['scheduled_hours'], 
-        ]);
+        $result = $this->engagementService->createWithSessions(
+            data: $validated,
+            daysOfWeek: $daysOfWeek,
+        );
 
-        $engagement->cohorts()->attach($validated['cohort_id']);
-
-        return $this->successResponse($engagement, 'Engagement created successfully.', 201);
+        return $this->successResponse(
+            data: [
+                'engagement' => $result['engagement'],
+                'sessions'   => $result['sessions'],
+                'sessions_count' => $result['sessions']->count(),
+            ],
+            message: sprintf(
+                'Engagement created successfully with %d session(s) generated.',
+                $result['sessions']->count(),
+            ),
+            code: 201,
+        );
     }
 
     public function show(Engagement $engagement): JsonResponse
     {
         $this->authorize('view', $engagement);
+
+        $engagement->load([
+            'instructor:id,name,email',
+            'cohorts',
+            'sessions' => fn ($q) => $q->orderBy('session_date'),
+        ]);
 
         return $this->successResponse($engagement, 'Engagement retrieved successfully.');
     }

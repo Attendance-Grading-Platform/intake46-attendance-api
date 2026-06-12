@@ -22,18 +22,24 @@ class Engagement extends Model
 {
     use HasFactory;
 
+    protected $appends = ['cohort'];
+
     protected $fillable = [
         'instructor_id',
         'type',
         'start_date',
         'end_date',
         'hours_per_session',
+        'scheduled_hours',
+        'days_of_week',
     ];
 
     protected $casts = [
         'start_date'        => 'date',
         'end_date'          => 'date',
         'hours_per_session' => 'decimal:2',
+        'scheduled_hours'   => 'integer',
+        'days_of_week'      => 'array',
     ];
 
 /* ──────────────────────────────────────────────
@@ -104,5 +110,10 @@ class Engagement extends Model
         return (int) ($this->sessions()
                         ->where('delivered', true)
                         ->count() * $this->hours_per_session);
+    }
+
+    public function getCohortAttribute(): ?Cohort
+    {
+        return $this->cohorts->first();
     }
 }

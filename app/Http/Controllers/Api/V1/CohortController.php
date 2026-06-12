@@ -29,17 +29,19 @@ class CohortController extends Controller
         $user = $request->user();
         $cohorts = collect();
 
+        $with = ['track', 'trackAdmins'];
+
         // Role-based visibility filtering
         if ($user->role === 'branch_manager') {
-            $cohorts = Cohort::all();
+            $cohorts = Cohort::with($with)->withCount('students')->get();
         } elseif ($user->role === 'track_admin') {
-            $cohorts = $user->administeredCohorts()->get();
+            $cohorts = $user->administeredCohorts()->with($with)->withCount('students')->get();
         } elseif ($user->role === 'instructor') {
-            $cohorts = Cohort::whereHas('engagements', function ($query) use ($user) {
+            $cohorts = Cohort::with($with)->withCount('students')->whereHas('engagements', function ($query) use ($user) {
                 $query->where('engagements.instructor_id', $user->id);
             })->get();
         } elseif ($user->role === 'student') {
-            $cohorts = $user->enrolledCohorts()->get();
+            $cohorts = $user->enrolledCohorts()->with($with)->withCount('students')->get();
         }
 
         return $this->successResponse($cohorts, 'Cohorts retrieved successfully.');
@@ -62,6 +64,17 @@ class CohortController extends Controller
             'ended_at' => 'required|date|after:started_at',
         ]);
 
+        // LC-1: A track shall have at most one active cohort at any time.
+        $requestedStatus = $validated['status'] ?? 'active';
+        if ($requestedStatus === 'active') {
+            $alreadyActive = Cohort::where('track_id', $validated['track_id'])
+                ->where('status', 'active')
+                ->exists();
+            if ($alreadyActive) {
+                return $this->errorResponse('This track already has an active cohort.', 422);
+            }
+        }
+
         $cohort = Cohort::create($validated);
 
         return $this->successResponse($cohort, 'Cohort created successfully.', 201);
@@ -75,6 +88,9 @@ class CohortController extends Controller
     public function show(Cohort $cohort): JsonResponse
     {
         $this->authorize('view', $cohort);
+
+        $cohort->load(['track', 'courses.components']);
+        $cohort->loadCount('students');
 
         return $this->successResponse($cohort, 'Cohort retrieved successfully.');
     }
@@ -183,10 +199,11 @@ class CohortController extends Controller
         // If they are authorized to view the cohort, they can see its roster
         $this->authorize('view', $cohort);
 
-        $students = $cohort->students;
+        $students = $cohort->students()->with(['enrolledLabGroups', 'tags'])->get();
 
         return $this->successResponse($students, 'Cohort roster retrieved successfully.');
     }
+
 
     /**
      * Enroll a student into a cohort.
@@ -215,4 +232,21 @@ class CohortController extends Controller
 
         return $this->successResponse(null, 'Student enrolled successfully.');
     }
+
+    // get all grades for students in a cohort
+    // GET /api/v1/cohorts/{cohort}/grades
+    public function grades(Cohort $cohort): JsonResponse
+    {
+        $this->authorize('view', $cohort);
+
+        $studentIds = $cohort->students()->pluck('users.id')->toArray();
+
+        $grades = \App\Models\Grade::whereIn('student_id', $studentIds)
+            ->with(['courseComponent.course', 'student:id,name'])
+            ->latest()
+            ->get();
+
+        return $this->successResponse($grades, 'Cohort grades retrieved successfully.');
+    }
 }
+

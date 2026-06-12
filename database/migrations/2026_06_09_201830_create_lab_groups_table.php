@@ -11,8 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('match_erd', function (Blueprint $table) {
-            //
+        Schema::create('lab_groups', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('cohort_id')->constrained()->onDelete('cascade');
+            $table->string('name');
+            $table->timestamps();
         });
     }
 
@@ -21,8 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('match_erd', function (Blueprint $table) {
-            //
-        });
+        Schema::dropIfExists('lab_groups');
     }
 };

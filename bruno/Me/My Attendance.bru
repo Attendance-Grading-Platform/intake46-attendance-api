@@ -1,0 +1,11 @@
+meta {
+  name: My Attendance
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/v1/me/attendance
+  body: none
+  auth: inherit
+}

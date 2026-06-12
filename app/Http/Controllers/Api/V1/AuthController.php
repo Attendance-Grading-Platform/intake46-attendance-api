@@ -71,4 +71,115 @@ class AuthController extends Controller
 
         return $this->successResponse(null, 'Logged out successfully.');
     }
+
+    /**
+     * Get the authenticated user profile.
+     *
+     * GET /api/v1/auth/me
+     */
+    public function me(Request $request): JsonResponse
+    {
+        return $this->successResponse([
+            'id'    => $request->user()->id,
+            'name'  => $request->user()->name,
+            'email' => $request->user()->email,
+            'role'  => $request->user()->role,
+        ], 'Profile retrieved successfully.');
+    }
+
+    /**
+     * Display a listing of users.
+     *
+     * GET /api/v1/auth/users
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', User::class);
+
+        $query = User::latest();
+
+        if ($request->has('role')) {
+            $query->where('role', $request->role);
+        }
+
+        $users = $query->get();
+        return $this->successResponse($users, 'Users retrieved successfully.');
+    }
+
+    /**
+     * Store a newly created user in storage.
+     *
+     * POST /api/v1/auth/users
+     */
+    public function store(Request $request): JsonResponse
+    {
+        $this->authorize('create', User::class);
+
+        $validated = $request->validate([
+            'name'      => 'required|string|max:255',
+            'email'     => 'required|string|email|max:255|unique:users',
+            'password'  => 'required|string|min:8',
+            'role'      => 'required|string|in:branch_manager,track_admin,instructor,student',
+            'is_active' => 'sometimes|boolean',
+            'expiry_date' => 'nullable|date',
+        ]);
+
+        $validated['password'] = Hash::make($validated['password']);
+        $user = User::create($validated);
+
+        return $this->successResponse($user, 'User created successfully.', 201);
+    }
+
+    /**
+     * Display the specified user.
+     *
+     * GET /api/v1/auth/users/{user}
+     */
+    public function show(User $user): JsonResponse
+    {
+        $this->authorize('view', $user);
+
+        return $this->successResponse($user, 'User retrieved successfully.');
+    }
+
+    /**
+     * Update the specified user in storage.
+     *
+     * PUT /api/v1/auth/users/{user}
+     */
+    public function update(Request $request, User $user): JsonResponse
+    {
+        $this->authorize('update', $user);
+
+        $validated = $request->validate([
+            'name'      => 'sometimes|required|string|max:255',
+            'email'     => 'sometimes|required|string|email|max:255|unique:users,email,' . $user->id,
+            'password'  => 'sometimes|string|min:8',
+            'role'      => 'sometimes|required|string|in:branch_manager,track_admin,instructor,student',
+            'is_active' => 'sometimes|boolean',
+            'expiry_date' => 'nullable|date',
+        ]);
+
+        if (isset($validated['password'])) {
+            $validated['password'] = Hash::make($validated['password']);
+        }
+
+        $user->update($validated);
+
+        return $this->successResponse($user, 'User updated successfully.');
+    }
+
+    /**
+     * Remove the specified user from storage.
+     *
+     * DELETE /api/v1/auth/users/{user}
+     */
+    public function destroy(User $user): JsonResponse
+    {
+        $this->authorize('delete', $user);
+
+        $user->delete();
+
+        return $this->successResponse(null, 'User deleted successfully.');
+    }
 }

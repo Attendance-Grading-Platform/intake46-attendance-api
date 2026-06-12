@@ -1,0 +1,11 @@
+meta {
+  name: Get Student Grades
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/v1/students/1/grades
+  body: none
+  auth: inherit
+}

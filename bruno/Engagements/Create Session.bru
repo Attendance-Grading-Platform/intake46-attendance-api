@@ -1,0 +1,19 @@
+meta {
+  name: Create Session
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/v1/engagements/1/sessions
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "session_date": "2026-06-15",
+    "start_time": "09:00:00",
+    "end_time": "12:00:00"
+  }
+}

@@ -22,14 +22,18 @@ class CheckAccountExpiry
         // If a user is authenticated, check their status
         if ($user) {
             if (! $user->is_active) {
-                // Revoke current token immediately for security
-                $user->currentAccessToken()->delete();
+                // Revoke current token immediately for security (if it's a real token)
+                if ($user->currentAccessToken() instanceof \Laravel\Sanctum\PersonalAccessToken) {
+                    $user->currentAccessToken()->delete();
+                }
 
                 return $this->errorResponse('Your account has been deactivated.', 403);
             }
 
             if ($user->expiry_date && now()->startOfDay()->greaterThan($user->expiry_date)) {
-                $user->currentAccessToken()->delete();
+                if ($user->currentAccessToken() instanceof \Laravel\Sanctum\PersonalAccessToken) {
+                    $user->currentAccessToken()->delete();
+                }
 
                 return $this->errorResponse('Your account has expired. Please contact administration.', 403);
             }

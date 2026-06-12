@@ -1,0 +1,20 @@
+meta {
+  name: Add Grade Record
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/v1/grades
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "student_id": 1,
+    "course_component_id": 1,
+    "raw_score": 85,
+    "raw_max": 100
+  }
+}

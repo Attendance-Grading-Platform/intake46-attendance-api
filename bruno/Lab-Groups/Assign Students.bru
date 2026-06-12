@@ -1,0 +1,21 @@
+meta {
+  name: Assign Students
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/v1/lab-groups/1/students
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "user_ids": [4, 5]
+  }
+}

@@ -7,6 +7,8 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ReviewExcuseRequest;
 use App\Http\Requests\StoreExcuseRequest;
+use App\Models\AttendanceLedger;
+use App\Models\AttendanceRecord;
 use App\Models\ExcuseRequest;
 use App\Services\ExcuseService;
 use App\Traits\ApiResponse;
@@ -66,7 +68,7 @@ class ExcuseRequestController extends Controller
 
         $user = $request->user();
 
-        $query = ExcuseRequest::with(['student:id,name,email', 'session', 'reviewer:id,name']);
+        $query = ExcuseRequest::with(['student:id,name,email', 'student.enrolledLabGroups:id,name', 'session.engagement', 'reviewer:id,name']);
 
         // EXC-1: Students see only their own requests
         if ($user->role === 'student') {

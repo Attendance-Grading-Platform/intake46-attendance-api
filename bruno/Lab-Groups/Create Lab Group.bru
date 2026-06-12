@@ -1,0 +1,21 @@
+meta {
+  name: Create Lab Group
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/v1/cohorts/1/lab-groups
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "name": "Lab Group A"
+  }
+}

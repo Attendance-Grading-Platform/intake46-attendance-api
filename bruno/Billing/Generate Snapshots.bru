@@ -1,0 +1,18 @@
+meta {
+  name: Generate Snapshots
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/v1/billing/generate
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "cohort_id": 1,
+    "period": "June 2026"
+  }
+}

@@ -104,7 +104,6 @@ class EngagementModuleSeeder extends Seeder
 
         $engagement = Engagement::firstOrCreate(
             [
-                'cohort_id'     => $cohort->id,
                 'instructor_id' => $instructor->id,
                 'type'          => 'lab',
             ],
@@ -114,6 +113,8 @@ class EngagementModuleSeeder extends Seeder
                 'scheduled_hours' => 4,
             ],
         );
+
+        $engagement->cohorts()->syncWithoutDetaching([$cohort->id]);
 
         // ─────────────────────────────────────────────────────────
         // 4. Sessions: 2 dates (1 delivered, 1 upcoming)

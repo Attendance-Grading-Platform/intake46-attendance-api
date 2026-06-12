@@ -79,7 +79,6 @@ class CourseController extends Controller
      */
     public function storeComponent(Request $request, Course $course): JsonResponse
     {
-        // Adding a component is modifying the course
         $this->authorize('update', $course);
 
         $validated = $request->validate([
@@ -88,12 +87,13 @@ class CourseController extends Controller
             'due_date' => 'nullable|date',
         ]);
 
-        // Business Rule: Total weight must not exceed 100
+        // SC-16: Total weight sum validation (100% cap)
         $currentWeight = $course->components()->sum('weight');
         if (round((float)$currentWeight + (float)$validated['weight'], 2) > 100) {
-            throw ValidationException::withMessages([
-                'weight' => "Total component weight exceeds 100 (Current: {$currentWeight}).",
-            ]);
+            return $this->errorResponse(
+                "Total component weight exceeds 100%. Current sum: {$currentWeight}% + your new {$validated['weight']}% = " . ($currentWeight + $validated['weight']) . "%.",
+                422
+            );
         }
 
         $component = $course->components()->create($validated);
@@ -106,8 +106,15 @@ class CourseController extends Controller
      */
     public function updateComponent(Request $request, CourseComponent $component): JsonResponse
     {
-        // Modifying a component requires update rights on the parent course
         $this->authorize('update', $component->course);
+
+        // SC-16: Lock weights once any grade exists for THIS specific component
+        if (\App\Models\Grade::where('course_component_id', $component->id)->exists()) {
+            return $this->errorResponse(
+                'Cannot modify component weights after grading has started for this component.',
+                422
+            );
+        }
 
         $validated = $request->validate([
             'type'     => 'sometimes|required|in:lab_deliverable,final_exam',
@@ -120,14 +127,39 @@ class CourseController extends Controller
             $otherWeights = $course->components()->where('id', '!=', $component->id)->sum('weight');
 
             if (round((float)$otherWeights + (float)$validated['weight'], 2) > 100) {
-                throw ValidationException::withMessages([
-                    'weight' => "Total component weight exceeds 100 (Other components: {$otherWeights}).",
-                ]);
+                return $this->errorResponse(
+                    "Weights must sum to 100%. Current other weights: {$otherWeights}%. Total would be: " . ($otherWeights + $validated['weight']) . "%.",
+                    422
+                );
             }
         }
 
         $component->update($validated);
 
+        // Optional: Notifying if total is not yet 100? 
+        // The spec implies it MUST sum to 100, but we allow partial setup.
+        // We will enforce the check at time of Course Completion/Final calculation.
+
         return $this->successResponse($component, 'Course component updated successfully.');
+    }
+
+    /**
+     * DELETE /api/v1/course-components/{component}
+     */
+    public function destroyComponent(CourseComponent $component): JsonResponse
+    {
+        $this->authorize('delete', $component->course);
+
+        // SEC-4/SC-16: Block deletion if any grade exists for THIS specific component
+        if (\App\Models\Grade::where('course_component_id', $component->id)->exists()) {
+            return $this->errorResponse(
+                'Cannot delete course component as grading has already started.',
+                422
+            );
+        }
+
+        $component->delete();
+
+        return $this->successResponse(null, 'Course component deleted successfully.');
     }
 }

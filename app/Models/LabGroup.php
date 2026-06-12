@@ -19,11 +19,13 @@ class LabGroup extends Model
 
     public function students(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'lab_group_students');
+        return $this->belongsToMany(User::class, 'lab_group_students')
+                    ->withTimestamps();
     }
 
     public function instructors(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'lab_group_instructors');
+        return $this->belongsToMany(User::class, 'lab_group_instructors')
+                    ->withTimestamps();
     }
 }

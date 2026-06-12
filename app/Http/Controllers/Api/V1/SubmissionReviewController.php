@@ -27,6 +27,7 @@ class SubmissionReviewController extends Controller
 
         // Strict Query Isolation
         if ($user->role === 'instructor') {
+            // SC-15/D3: Only students in lab groups assigned to this instructor
             $studentIds = $user->instructedLabGroups()
                 ->with('students')
                 ->get()
@@ -37,6 +38,7 @@ class SubmissionReviewController extends Controller
             $query->whereIn('student_id', $studentIds);
 
         } elseif ($user->role === 'track_admin') {
+            // SEC-1: Only students in cohorts where this admin is assigned
             $cohortIds = $user->administeredCohorts()->pluck('cohorts.id');
             $studentIds = User::whereHas('enrolledCohorts', function($q) use ($cohortIds) {
                 $q->whereIn('cohorts.id', $cohortIds);
@@ -44,6 +46,7 @@ class SubmissionReviewController extends Controller
             $query->whereIn('student_id', $studentIds);
 
         } elseif ($user->role === 'student') {
+            // SEC-1: Students only see their own work
             $query->where('student_id', $user->id);
         }
 
@@ -57,6 +60,7 @@ class SubmissionReviewController extends Controller
 
     /**
      * Evaluate a submission by creating/updating a Grade record.
+     * ENG-2: Late penalty is auto-applied based on CourseComponent due_date.
      */
     public function update(Request $request, string $id)
     {
@@ -67,29 +71,54 @@ class SubmissionReviewController extends Controller
             'raw_max'   => 'required|numeric|min:1',
         ]);
 
+        // raw_score must not exceed raw_max
+        if ($validated['raw_score'] > $validated['raw_max']) {
+            return $this->errorResponse('raw_score cannot exceed raw_max.', 422);
+        }
+
         // CRIT-7: Authorize the act of Grading, not updating the submission
         $student = User::findOrFail($submission->student_id);
         $this->authorize('create', [\App\Models\Grade::class, $student]);
 
-        // CRIT-8: Use the validated raw_max, not the component weight
+        // ENG-2: Apply late penalty using CourseComponent.due_date vs submission.created_at
+        $dueDate     = $submission->courseComponent?->due_date;
+        $submittedAt = $submission->created_at ?? now();
+        $daysLate    = 0;
+
+        if ($dueDate) {
+            $daysLate = max(0, (int) now()->parse($submittedAt)
+                ->startOfDay()
+                ->diffInDays(now()->parse($dueDate)->startOfDay(), false));
+        }
+
+        $penaltyService  = new \App\Services\LatePenaltyService();
+        $finalScore      = $penaltyService->calculate((float) $validated['raw_score'], $daysLate);
+
+        // CRIT-8: Save the post-penalty score as raw_score for normalization pipeline
         $grade = \App\Models\Grade::updateOrCreate(
             [
-                'student_id' => $submission->student_id,
+                'student_id'          => $submission->student_id,
                 'course_component_id' => $submission->course_component_id,
             ],
             [
-                'graded_by' => $request->user()->id,
-                'raw_score' => $validated['raw_score'],
-                'raw_max'   => $validated['raw_max'],
+                'graded_by'  => $request->user()->id,
+                'raw_score'  => $finalScore,
+                'raw_max'    => $validated['raw_max'],
             ]
         );
 
-        // Fetch the submission again with its new grade attached for the frontend resource
         $submission->load('grade');
 
         return $this->successResponse(
-            new SubmissionReviewResource($submission),
-            'Submission graded successfully.'
+            [
+                'submission'       => new SubmissionReviewResource($submission),
+                'penalty_applied'  => [
+                    'days_late'    => $daysLate,
+                    'original_raw' => $validated['raw_score'],
+                    'final_score'  => $finalScore,
+                ],
+            ],
+            $daysLate > 0 ? "Graded with late penalty ({$daysLate} days late)." : 'Submission graded successfully.'
         );
     }
 
@@ -131,5 +160,29 @@ class SubmissionReviewController extends Controller
         ];
 
         return $this->successResponse($data, 'Student detailed grade analytics retrieved successfully.');
+    }
+
+    /**
+     * GET /api/v1/engagements/{id}/deliverables
+     * Filter submissions specifically for a given engagement.
+     */
+    public function engagementDeliverables(Request $request, string $id)
+    {
+        $engagement = \App\Models\Engagement::findOrFail($id);
+        $this->authorize('view', $engagement);
+
+        // Fetch students from the cohort associated with this engagement
+        $cohortIds = $engagement->cohorts()->pluck('cohorts.id');
+        $studentIds = User::whereHas('enrolledCohorts', function($q) use ($cohortIds) {
+            $q->whereIn('cohorts.id', $cohortIds);
+        })->pluck('id');
+
+        $submissions = Submission::whereIn('student_id', $studentIds)
+            ->with(['student', 'courseComponent'])
+            ->latest()
+            ->paginate(15);
+
+        $resourceCollection = SubmissionReviewResource::collection($submissions)->response()->getData(true);
+        return $this->successResponse($resourceCollection, 'Engagement submissions retrieved successfully.');
     }
 }
