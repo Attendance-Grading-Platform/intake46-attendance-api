@@ -34,6 +34,10 @@ class BillingController extends Controller
         );
 
         $query = BillingSnapshot::with(['person', 'cohort']);
+        
+        if ($request->has('cohort_id')) {
+            $query->where('cohort_id', $request->cohort_id);
+        }
 
         // Filter: Track Admins only see snapshots for cohorts they manage
         if ($user->role === 'track_admin') {
@@ -51,10 +55,17 @@ class BillingController extends Controller
             $totalHours += $snapshot->delivered_hours;
         }
 
+        $studentsCount = 0;
+        if ($request->has('cohort_id')) {
+            $studentsCount = \App\Models\Cohort::find($request->cohort_id)?->students()->count() ?? 0;
+        }
+
         $data = [
             'summary' => [
                 'total_delivered_hours' => $totalHours,
-                'grand_total_amount' => $totalAmount
+                'grand_total_amount' => $totalAmount,
+                'students_count' => $studentsCount,
+                'cost_per_student' => $studentsCount > 0 ? round($totalAmount / $studentsCount, 2) : 0
             ],
             'snapshots' => $snapshots
         ];
@@ -70,8 +81,10 @@ class BillingController extends Controller
     {
         $validated = $request->validate([
             'cohort_id' => 'required|exists:cohorts,id',
-            'period'    => 'required|string|max:50', // e.g., "June 2026"
+            'period'    => 'nullable|string|max:50', 
         ]);
+
+        $period = $validated['period'] ?? now()->format('F Y');
 
         $cohort = \App\Models\Cohort::findOrFail($validated['cohort_id']);
         $this->authorize('update', $cohort);
@@ -88,7 +101,7 @@ class BillingController extends Controller
         $count = 0;
 
         foreach ($instructors as $instructor) {
-            $service->generate($instructor, $cohort, $validated['period']);
+            $service->generate($instructor, $cohort, $period);
             $count++;
         }
 
