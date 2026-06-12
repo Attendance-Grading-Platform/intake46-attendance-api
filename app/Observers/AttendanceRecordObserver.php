@@ -23,9 +23,14 @@ class AttendanceRecordObserver
             return;
         }
 
+        $cohortId = $record->session->engagement->cohorts->first()?->id;
+
         $ledger = AttendanceLedger::firstOrCreate(
             ['student_id' => $record->student_id],
-            ['balance' => AttendanceLedger::INITIAL_BALANCE]
+            [
+                'cohort_id' => $cohortId,
+                'balance' => AttendanceLedger::INITIAL_BALANCE
+            ]
         );
 
         // Record unexcused absence transaction

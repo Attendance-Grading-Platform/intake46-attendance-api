@@ -30,12 +30,20 @@ class Engagement extends Model
         'start_date',
         'end_date',
         'hours_per_session',
+        'scheduled_hours',
+        'days_of_week',
+        'daily_start_time',
+        'daily_end_time',
     ];
 
     protected $casts = [
         'start_date'        => 'date',
         'end_date'          => 'date',
         'hours_per_session' => 'decimal:2',
+        'scheduled_hours'   => 'integer',
+        'days_of_week'      => 'array',
+        'daily_start_time'  => 'string',
+        'daily_end_time'    => 'string',
     ];
 
 /* ──────────────────────────────────────────────

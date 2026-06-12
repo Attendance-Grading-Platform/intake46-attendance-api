@@ -22,7 +22,7 @@ class EngagementController extends Controller
     {
         $this->authorize('viewAny', Engagement::class);
 
-        $engagements = Engagement::with(['instructor:id,name,email', 'cohorts'])
+        $engagements = Engagement::with(['instructor:id,name,email', 'cohorts', 'sessions'])
             ->when($request->cohort_id, fn ($q) => $q->whereHas('cohorts', fn ($sq) => $sq->where('cohorts.id', $request->cohort_id)))
             ->when($request->instructor_id, fn ($q) => $q->where('instructor_id', $request->instructor_id))
             ->when($request->type, fn ($q) => $q->where('type', $request->type))

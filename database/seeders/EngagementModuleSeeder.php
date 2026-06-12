@@ -110,9 +110,10 @@ class EngagementModuleSeeder extends Seeder
             [
                 'start_date'      => Carbon::today()->subWeeks(2),
                 'end_date'        => Carbon::today()->addWeeks(2),
-                'scheduled_hours' => 4,
+                'hours_per_session' => 4,
             ],
         );
+        $engagement->cohorts()->syncWithoutDetaching([$cohort->id]);
 
         $engagement->cohorts()->syncWithoutDetaching([$cohort->id]);
 
@@ -142,12 +143,12 @@ class EngagementModuleSeeder extends Seeder
 
         AttendanceLedger::firstOrCreate(
             ['student_id' => $studentA->id],
-            ['balance'    => 250],
+            ['cohort_id'  => $cohort->id, 'balance' => 250],
         );
 
         AttendanceLedger::firstOrCreate(
             ['student_id' => $studentB->id],
-            ['balance'    => 250],
+            ['cohort_id'  => $cohort->id, 'balance' => 250],
         );
 
         // ─────────────────────────────────────────────────────────
@@ -164,6 +165,8 @@ class EngagementModuleSeeder extends Seeder
                 'student_id' => $studentA->id,
             ],
             [
+                'track_id'   => $track->id,
+                'status'     => 'present',
                 'arrived_at' => $sessionDate->copy()->setTime(9, 0),
                 'left_at'    => $sessionDate->copy()->setTime(13, 0),
             ],
@@ -175,9 +178,25 @@ class EngagementModuleSeeder extends Seeder
                 'student_id' => $studentB->id,
             ],
             [
+                'track_id'   => $track->id,
+                'status'     => 'present',
                 'arrived_at' => $sessionDate->copy()->setTime(10, 30),
                 'left_at'    => $sessionDate->copy()->setTime(13, 0),
             ],
+        );
+
+        // ─────────────────────────────────────────────────────────
+        // 7. Seed an Excuse Request for testing frontend
+        // ─────────────────────────────────────────────────────────
+        \App\Models\ExcuseRequest::firstOrCreate(
+            [
+                'student_id' => $studentA->id,
+                'session_id' => $deliveredSession->id,
+            ],
+            [
+                'status' => 'requested',
+                'reason' => 'I had a doctor appointment and could not attend.',
+            ]
         );
 
         $this->command->info('✅ EngagementModuleSeeder completed.');

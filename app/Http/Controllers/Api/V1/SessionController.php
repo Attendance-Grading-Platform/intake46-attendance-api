@@ -41,4 +41,34 @@ class SessionController extends Controller
 
         return $this->successResponse($session, 'Session updated successfully.');
     }
+
+    /**
+     * GET /api/v1/sessions/active
+     *
+     * Retrieve active sessions for the authenticated instructor based on
+     * the current date and time window.
+     */
+    public function active(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if ($user->role !== 'instructor') {
+            return $this->errorResponse('Only instructors can have active sessions.', 403);
+        }
+
+        $now = now();
+        $currentTime = $now->format('H:i:s');
+        $currentDate = $now->toDateString();
+
+        $sessions = EngagementSession::where('session_date', $currentDate)
+            ->where('start_time', '<=', $currentTime)
+            ->where('end_time', '>=', $currentTime)
+            ->whereHas('engagement', function ($query) use ($user) {
+                $query->where('instructor_id', $user->id);
+            })
+            ->with('engagement:id,type,instructor_id,start_date,end_date')
+            ->get();
+
+        return $this->successResponse($sessions, 'Active sessions retrieved successfully.');
+    }
 }

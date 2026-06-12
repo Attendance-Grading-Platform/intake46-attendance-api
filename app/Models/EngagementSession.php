@@ -25,11 +25,15 @@ class EngagementSession extends Model
     protected $fillable = [
         'engagement_id',
         'session_date',
+        'start_time',
+        'end_time',
         'delivered',
     ];
 
     protected $casts = [
         'session_date' => 'date',
+        'start_time'   => 'string',
+        'end_time'     => 'string',
         'delivered'    => 'boolean',
     ];
 

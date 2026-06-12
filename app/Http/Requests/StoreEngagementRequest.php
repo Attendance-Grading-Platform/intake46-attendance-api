@@ -55,7 +55,7 @@ class StoreEngagementRequest extends FormRequest
 
             'type' => [
                 'required',
-                Rule::in(['lecture', 'lab', 'business_session']),
+                Rule::in(['lecture', 'lab', 'business']),
             ],
 
             'start_date' => [
@@ -95,6 +95,17 @@ class StoreEngagementRequest extends FormRequest
                 'integer',
                 'between:0,6',
             ],
+
+            'daily_start_time' => [
+                'nullable',
+                'date_format:H:i:s',
+            ],
+
+            'daily_end_time' => [
+                'nullable',
+                'date_format:H:i:s',
+                'after:daily_start_time',
+            ],
         ];
     }
 
@@ -113,6 +124,8 @@ class StoreEngagementRequest extends FormRequest
             'start_date'     => 'start date',
             'end_date'       => 'end date',
             'scheduled_hours' => 'scheduled hours',
+            'daily_start_time' => 'daily start time',
+            'daily_end_time'   => 'daily end time',
         ];
     }
 
@@ -124,11 +137,14 @@ class StoreEngagementRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'type.in'                  => 'Engagement type must be one of: lecture, lab, or business_session.',
+            'type.in'                  => 'Engagement type must be one of: lecture, lab, or business.',
             'start_date.after_or_equal' => 'The start date must be today or a future date.',
             'end_date.after_or_equal'   => 'The end date must be equal to or after the start date.',
             'days_of_week.required'     => 'At least one day of the week must be selected for session scheduling.',
             'days_of_week.*.between'    => 'Each day must be an integer from 0 (Sunday) to 6 (Saturday).',
+            'daily_start_time.date_format' => 'Daily start time must be in H:i:s format.',
+            'daily_end_time.date_format'   => 'Daily end time must be in H:i:s format.',
+            'daily_end_time.after'      => 'Daily end time must be after daily start time.',
         ];
     }
 }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreAttendanceRequest;
 use App\Models\AttendanceRecord;
 use App\Models\EngagementSession;
+use App\Models\ExcuseRequest;
 use App\Models\User;
 use App\Services\AttendanceService;
 use App\Traits\ApiResponse;
@@ -194,6 +195,33 @@ class AttendanceController extends Controller
         }
 
         return $this->successResponse(['marked_absent_count' => $count], $count . ' student(s) marked as absent.');
+    }
+
+    /**
+     * GET /api/v1/me/absent-sessions
+     *
+     * Retrieve sessions where the student is marked absent and has not
+     * yet submitted an excuse request.
+     */
+    public function absentSessions(Request $request): JsonResponse
+    {
+        $studentId = $request->user()->id;
+
+        $absentSessionIds = AttendanceRecord::where('student_id', $studentId)
+            ->where('status', 'absent')
+            ->pluck('session_id');
+
+        $excusedSessionIds = ExcuseRequest::where('student_id', $studentId)
+            ->pluck('session_id');
+
+        $eligibleSessionIds = $absentSessionIds->diff($excusedSessionIds);
+
+        $sessions = EngagementSession::whereIn('id', $eligibleSessionIds)
+            ->with('engagement:id,type')
+            ->orderBy('session_date', 'desc')
+            ->get(['id', 'session_date', 'engagement_id']);
+
+        return $this->successResponse($sessions, 'Absent sessions retrieved successfully.');
     }
 }
     

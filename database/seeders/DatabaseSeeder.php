@@ -81,6 +81,9 @@ class DatabaseSeeder extends Seeder
 
             // ── Step 10: Billing ──────────────────────────
             BillingSeeder::class,
+
+            // ── Step 11: Engagement module demo scenario ──
+            EngagementModuleSeeder::class,
         ]);
     }
 }
