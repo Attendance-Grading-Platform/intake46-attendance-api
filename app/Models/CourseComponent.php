@@ -30,4 +30,9 @@ class CourseComponent extends Model
     {
         return $this->belongsTo(Course::class);
     }
+
+    public function submissions(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Submission::class);
+    }
 }
