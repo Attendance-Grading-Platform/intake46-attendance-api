@@ -158,6 +158,7 @@ Route::prefix('v1')
             Route::post('/deliverables', [SubmissionController::class, 'store'])->name('v1.me.submissions.store');
             Route::get('/announcements', [AnnouncementController::class, 'myAnnouncements'])->name('v1.me.announcements');
             Route::get('/progress', [AnalyticsController::class, 'myProgress'])->name('v1.me.progress');
+            Route::get('/deliverables', [SubmissionController::class, 'index'])->name('v1.me.submissions.index');
         });
 
         // ── Excuse Requests ──────────────────────────
