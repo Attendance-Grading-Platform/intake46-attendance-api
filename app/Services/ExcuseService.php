@@ -44,7 +44,7 @@ class ExcuseService
         // Store attachment if provided
         $attachmentPath = null;
         if ($attachment) {
-            $attachmentPath = $attachment->store('excuse-attachments', 'local');
+            $attachmentPath = $attachment->store('excuse-attachments', 'public');
         }
 
         return ExcuseRequest::create([
@@ -84,25 +84,33 @@ class ExcuseService
             ]);
 
             if ($status === 'approved') {
-                // TODO: Implement ledger adjustment and risk-flag evaluation.
-                //
-                // Suggested implementation:
-                //
-                // $ledger = AttendanceLedger::firstOrCreate(
-                //     ['student_id' => $excuse->student_id],
-                //     ['balance' => 250]
-                // );
-                // $ledger->convertToExcused();  // +20 net (reverses -25, applies -5)
-                //
-                // // Update the linked attendance record status
-                // AttendanceRecord::where('session_id', $excuse->session_id)
-                //     ->where('student_id', $excuse->student_id)
-                //     ->update(['status' => 'excused']);
-                //
-                // // Re-evaluate risk flags
-                // if ($ledger->fresh()->isAtRisk()) {
-                //     StudentRiskFlag::firstOrCreate([...]);
-                // }
+                $ledger = \App\Models\AttendanceLedger::where('student_id', $excuse->student_id)->first();
+                if ($ledger) {
+                    $ledger->deductExcused($excuse->session_id, $excuse->id);
+                    
+                    if ($ledger->fresh()->isAtRisk()) {
+                        \App\Models\StudentRiskFlag::firstOrCreate([
+                            'student_id' => $excuse->student_id,
+                            'status' => 'active'
+                        ], [
+                            'flagged_at' => now(),
+                            'reason' => 'Ledger balance below 150 points after excused absence.'
+                        ]);
+                    }
+                }
+
+                \App\Models\AttendanceRecord::where('session_id', $excuse->session_id)
+                    ->where('student_id', $excuse->student_id)
+                    ->update(['status' => 'excused']);
+            } elseif ($status === 'rejected') {
+                $ledger = \App\Models\AttendanceLedger::where('student_id', $excuse->student_id)->first();
+                if ($ledger) {
+                    $ledger->revertToUnexcused($excuse->session_id);
+                }
+
+                \App\Models\AttendanceRecord::where('session_id', $excuse->session_id)
+                    ->where('student_id', $excuse->student_id)
+                    ->update(['status' => 'absent']);
             }
 
             return $excuse->fresh();
@@ -119,7 +127,7 @@ class ExcuseService
     {
         // Clean up the attachment file from storage if it exists
         if ($excuse->attachment_path) {
-            Storage::disk('local')->delete($excuse->attachment_path);
+            Storage::disk('public')->delete($excuse->attachment_path);
         }
 
         $excuse->delete();

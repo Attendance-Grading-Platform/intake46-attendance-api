@@ -15,6 +15,7 @@ class EngagementFactory extends Factory
             'type' => 'instructor',
             'start_date' => now()->subDay(),
             'end_date' => now()->addDay(),
+            'hours_per_session' => 3,
             'scheduled_hours' => 18,
             'days_of_week' => ['Monday', 'Wednesday'],
         ];
