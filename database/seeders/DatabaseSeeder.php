@@ -102,6 +102,7 @@ class DatabaseSeeder extends Seeder
             EngagementSeeder::class,
             AttendanceLedgerSeeder::class,
             ExcuseSeeder::class,
+            EngagementModuleSeeder::class,
         ]);
     }
 }

@@ -128,6 +128,7 @@ Route::prefix('v1')
         Route::get('/engagements/{engagement}/sessions', [SessionController::class, 'index'])->name('v1.sessions.index');
         Route::get('/engagements/{engagement}/deliverables', [SubmissionReviewController::class, 'engagementDeliverables'])->name('v1.engagements.deliverables');
         
+        Route::get('/sessions/active', [SessionController::class, 'active'])->name('v1.sessions.active');
         Route::get('/sessions/{session}', [SessionController::class, 'show'])->name('v1.sessions.show');
         Route::patch('/sessions/{session}', [SessionController::class, 'update'])->name('v1.sessions.update');
         Route::delete('/sessions/{session}', [SessionController::class, 'destroy'])->name('v1.sessions.destroy');
@@ -155,6 +156,7 @@ Route::prefix('v1')
             Route::get('/grades', [GradeController::class, 'index'])->name('v1.me.grades');
             Route::get('/excuses', [ExcuseRequestController::class, 'index'])->name('v1.me.excuses');
             Route::post('/excuses', [ExcuseRequestController::class, 'store'])->name('v1.me.excuses.store');
+            Route::get('/absent-sessions', [AttendanceController::class, 'absentSessions'])->name('v1.me.absent-sessions');
             Route::post('/deliverables', [SubmissionController::class, 'store'])->name('v1.me.submissions.store');
             Route::get('/announcements', [AnnouncementController::class, 'myAnnouncements'])->name('v1.me.announcements');
             Route::get('/progress', [AnalyticsController::class, 'myProgress'])->name('v1.me.progress');

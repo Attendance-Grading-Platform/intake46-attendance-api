@@ -28,6 +28,7 @@ class EngagementSeeder extends Seeder
                 'start_date'      => Carbon::today()->subMonths(1),
                 'end_date'        => Carbon::today()->addMonths(2),
                 'scheduled_hours' => 4,
+                'hours_per_session' => 4,
             ]);
             $e->cohorts()->attach($cohorts->first()->id);
         }
@@ -35,10 +36,11 @@ class EngagementSeeder extends Seeder
         for ($i = 0; $i < 15; $i++) {
             $engagement = Engagement::create([
                 'instructor_id'   => $instructors->random()->id,
-                'type'            => ['lecture', 'lab', 'business_session'][array_rand(['lecture', 'lab', 'business_session'])],
+                'type'            => ['lecture', 'lab', 'business'][array_rand(['lecture', 'lab', 'business'])],
                 'start_date'      => Carbon::today()->subDays(rand(10, 30)),
                 'end_date'        => Carbon::today()->addDays(rand(10, 60)),
                 'scheduled_hours' => rand(2, 6),
+                'hours_per_session' => rand(2, 6),
             ]);
 
             // attach to 1-3 random Cohort records
@@ -62,6 +64,8 @@ class EngagementSeeder extends Seeder
                         \App\Models\AttendanceRecord::create([
                             'session_id' => $session->id,
                             'student_id' => $student->id,
+                            'track_id'   => $cohort->track_id,
+                            'status'     => $isPresent ? 'present' : 'absent',
                             'arrived_at' => $isPresent ? $sessionDate->copy()->setTime(9, rand(0, 20)) : null,
                             'left_at'    => $isPresent ? $sessionDate->copy()->setTime(13, 0) : null,
                         ]);

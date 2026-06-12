@@ -32,6 +32,8 @@ class Engagement extends Model
         'hours_per_session',
         'scheduled_hours',
         'days_of_week',
+        'daily_start_time',
+        'daily_end_time',
     ];
 
     protected $casts = [
@@ -40,6 +42,8 @@ class Engagement extends Model
         'hours_per_session' => 'decimal:2',
         'scheduled_hours'   => 'integer',
         'days_of_week'      => 'array',
+        'daily_start_time'  => 'string',
+        'daily_end_time'    => 'string',
     ];
 
 /* ──────────────────────────────────────────────
