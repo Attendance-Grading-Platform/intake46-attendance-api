@@ -131,6 +131,27 @@ class CohortController extends Controller
     }
 
     /**
+     * Close an active cohort.
+     *
+     * PUT /api/v1/cohorts/{cohort}/close
+     */
+    public function close(Cohort $cohort): JsonResponse
+    {
+        $this->authorize('update', $cohort);
+
+        if ($cohort->status === 'closed') {
+            return $this->errorResponse('This cohort is already closed.', 422);
+        }
+
+        $cohort->update([
+            'status' => 'closed',
+            'ended_at' => now(),
+        ]);
+
+        return $this->successResponse($cohort, 'Cohort closed successfully.');
+    }
+
+    /**
      * Assign a track admin to a cohort.
      *
      * POST /api/v1/cohorts/{cohort}/assign-admin
