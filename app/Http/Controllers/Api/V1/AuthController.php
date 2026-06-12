@@ -11,6 +11,7 @@ use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
@@ -96,7 +97,8 @@ class AuthController extends Controller
     {
         $this->authorize('viewAny', User::class);
 
-        $query = User::latest();
+        // Eager load the relationships so Vue knows which cohort they belong to
+        $query = User::with(['enrolledCohorts', 'administeredCohorts'])->latest();
 
         if ($request->has('role')) {
             $query->where('role', $request->role);
@@ -105,9 +107,8 @@ class AuthController extends Controller
         $users = $query->get();
         return $this->successResponse($users, 'Users retrieved successfully.');
     }
-
     /**
-     * Store a newly created user in storage.
+     * Store a newly provisioned user and handle role-specific relationships.
      *
      * POST /api/v1/auth/users
      */
@@ -115,19 +116,64 @@ class AuthController extends Controller
     {
         $this->authorize('create', User::class);
 
+        // 1. Validate the base user data AND the dynamic role-specific data
         $validated = $request->validate([
-            'name'      => 'required|string|max:255',
-            'email'     => 'required|string|email|max:255|unique:users',
-            'password'  => 'required|string|min:8',
-            'role'      => 'required|string|in:branch_manager,track_admin,instructor,student',
-            'is_active' => 'sometimes|boolean',
-            'expiry_date' => 'nullable|date',
+            'name'        => 'required|string|max:255',
+            'email'       => 'required|string|email|max:255|unique:users',
+            'password'    => 'required|string|min:8',
+            'role'        => 'required|string|in:branch_manager,track_admin,instructor,student',
+            'is_active'   => 'sometimes|boolean',
+            'expiry_date' => 'required|date|after_or_equal:today',
+
+            // Instructor specific fields
+            'compensation_type' => 'required_if:role,instructor|in:internal,external',
+            'hourly_rate'       => 'required_if:compensation_type,external|numeric|min:0',
+            'fixed_salary'      => 'required_if:compensation_type,internal|numeric|min:0',
+
+            // Student & Admin specific fields (Required for BOTH)
+            'cohort_id'   => 'required_if:role,student,track_admin|exists:cohorts,id',
         ]);
 
         $validated['password'] = Hash::make($validated['password']);
-        $user = User::create($validated);
 
-        return $this->successResponse($user, 'User created successfully.', 201);
+        // 2. Use a Database Transaction to ensure data integrity
+        $user = DB::transaction(function () use ($validated) {
+            
+            // Extract base user data
+            $userData = collect($validated)->only([
+                'name', 'email', 'password', 'role', 'is_active', 'expiry_date', 
+                'compensation_type', 'hourly_rate', 'fixed_salary'
+            ])->toArray();
+
+            $user = User::create($userData);
+
+            // 3. Handle Role-Specific Provisioning
+            
+            // A. If they are a STUDENT
+            if ($user->role === 'student' && isset($validated['cohort_id'])) {
+                // Enroll student in cohort
+                $user->enrolledCohorts()->attach($validated['cohort_id'], [
+                    'enrolled_at' => now()
+                ]);
+                
+                // Initialize their Attendance Ledger (Start with 250 points as per ATT-4)
+                \App\Models\AttendanceLedger::create([
+                    'student_id' => $user->id,
+                    'cohort_id'  => $validated['cohort_id'],
+                    'balance'    => 250
+                ]);
+            }
+
+            // B. If they are a TRACK ADMIN
+            if ($user->role === 'track_admin' && isset($validated['cohort_id'])) {
+                // Assign Track Admin to the cohort
+                $user->administeredCohorts()->attach($validated['cohort_id']);
+            }
+
+            return $user;
+        });
+
+        return $this->successResponse($user, 'Account successfully provisioned.', 201);
     }
 
     /**
@@ -151,22 +197,58 @@ class AuthController extends Controller
     {
         $this->authorize('update', $user);
 
+        // 1. Validate including dynamic fields (Password is optional on update)
         $validated = $request->validate([
-            'name'      => 'sometimes|required|string|max:255',
-            'email'     => 'sometimes|required|string|email|max:255|unique:users,email,' . $user->id,
-            'password'  => 'sometimes|string|min:8',
-            'role'      => 'sometimes|required|string|in:branch_manager,track_admin,instructor,student',
-            'is_active' => 'sometimes|boolean',
-            'expiry_date' => 'nullable|date',
+            'name'        => 'sometimes|required|string|max:255',
+            'email'       => 'sometimes|required|string|email|max:255|unique:users,email,' . $user->id,
+            'password'    => 'nullable|string|min:8',
+            'role'        => 'sometimes|required|string|in:branch_manager,track_admin,instructor,student',
+            'is_active'   => 'sometimes|boolean',
+            'expiry_date' => 'sometimes|required|date|after_or_equal:today',
+
+            // Instructor specific fields
+            'compensation_type' => 'required_if:role,instructor|in:internal,external',
+            'hourly_rate'       => 'required_if:compensation_type,external|numeric|min:0',
+            'fixed_salary'      => 'required_if:compensation_type,internal|numeric|min:0',
+
+            // Student & Admin specific fields
+            'cohort_id'   => 'required_if:role,student,track_admin|exists:cohorts,id',
         ]);
 
-        if (isset($validated['password'])) {
+        if (!empty($validated['password'])) {
             $validated['password'] = Hash::make($validated['password']);
+        } else {
+            unset($validated['password']); // Don't overwrite with a blank password
         }
 
-        $user->update($validated);
+        try {
+            DB::transaction(function () use ($validated, $user) {
+                // 2. Update base fields
+                $userData = collect($validated)->only([
+                    'name', 'email', 'password', 'role', 'is_active', 'expiry_date',
+                    'compensation_type', 'hourly_rate', 'fixed_salary'
+                ])->toArray();
+                
+                $user->update($userData);
 
-        return $this->successResponse($user, 'User updated successfully.');
+                // 3. Sync Relationships
+                if ($user->role === 'student' && isset($validated['cohort_id'])) {
+                    $user->enrolledCohorts()->sync([
+                        $validated['cohort_id'] => ['enrolled_at' => now()]
+                    ]);
+                }
+
+                if ($user->role === 'track_admin' && isset($validated['cohort_id'])) {
+                    $user->administeredCohorts()->sync([$validated['cohort_id']]);
+                }
+            });
+
+            return $this->successResponse($user, 'Account updated successfully.');
+
+        } catch (\Illuminate\Database\QueryException $e) {
+            \Log::error('Database Error during User Update: ' . $e->getMessage());
+            return $this->errorResponse('A database error occurred.', 500);
+        }
     }
 
     /**
