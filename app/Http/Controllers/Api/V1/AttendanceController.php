@@ -73,6 +73,7 @@ class AttendanceController extends Controller
         //   2. Determining status (present vs. late threshold).
         //   3. Updating the AttendanceLedger balance.
         //   4. Evaluating and persisting StudentRiskFlags if balance < 150.
+
         $record = $this->attendanceService->processScan(
             sessionId: (int) $validated['session_id'],
             studentId: (int) $validated['student_id'],
@@ -194,13 +195,13 @@ class AttendanceController extends Controller
             return $this->errorResponse('You cannot view this session attendance.', 403);
         }
 
-        $records = AttendanceRecord::where('session_id', $session->id)
+        $records = AttendanceRecord::where('session_id', $session->getKey())
             ->with('student:id,name,email')
             ->orderBy('arrived_at')
             ->get();
 
         $data = [
-            'session_id' => $session->id,
+            'session_id' => $session->getKey(),
             'session_date' => $session->session_date,
             'records' => $records,
         ];
@@ -228,14 +229,14 @@ class AttendanceController extends Controller
         foreach ($validated['student_ids'] as $studentId) {
             // check if record already exists
             $existing = AttendanceRecord::where('student_id', $studentId)
-                ->where('session_id', $session->id)
+                ->where('session_id', $session->getKey())
                 ->first();
 
             if (!$existing) {
                 // create absent record - observer will deduct 25 from ledger
                 AttendanceRecord::create([
                     'student_id' => $studentId,
-                    'session_id' => $session->id,
+                    'session_id' => $session->getKey(),
                     'arrived_at' => null,
                     'left_at' => null,
                 ]);
@@ -273,3 +274,4 @@ class AttendanceController extends Controller
         return $this->successResponse($sessions, 'Absent sessions retrieved successfully.');
     }
 }
+    

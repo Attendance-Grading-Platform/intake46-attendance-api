@@ -119,5 +119,6 @@ class Engagement extends Model
     public function getCohortAttribute(): ?Cohort
     {
         return $this->cohorts->first();
+
     }
 }

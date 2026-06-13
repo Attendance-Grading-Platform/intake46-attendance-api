@@ -44,7 +44,8 @@ class ExcuseService
         // Store attachment if provided
         $attachmentPath = null;
         if ($attachment) {
-            $attachmentPath = $attachment->store('excuse-attachments', 'public');
+            $attachmentPath = $attachment->store('excuse-attachments', 'local');
+
         }
 
         return ExcuseRequest::create([
@@ -111,6 +112,7 @@ class ExcuseService
                 \App\Models\AttendanceRecord::where('session_id', $excuse->session_id)
                     ->where('student_id', $excuse->student_id)
                     ->update(['status' => 'absent']);
+
             }
 
             return $excuse->fresh();
@@ -127,7 +129,8 @@ class ExcuseService
     {
         // Clean up the attachment file from storage if it exists
         if ($excuse->attachment_path) {
-            Storage::disk('public')->delete($excuse->attachment_path);
+            Storage::disk('local')->delete($excuse->attachment_path);
+
         }
 
         $excuse->delete();
