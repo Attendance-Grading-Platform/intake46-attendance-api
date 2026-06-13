@@ -20,7 +20,7 @@ WORKDIR /var/www
 
 COPY . .
 
-RUN composer install --no-interaction --optimize-autoloader --no-dev
+RUN composer install --no-interaction --optimize-autoloader
 
 RUN mkdir -p storage/logs \
     storage/framework/cache \
