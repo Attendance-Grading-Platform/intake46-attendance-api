@@ -67,17 +67,6 @@ class StoreAttendanceRequest extends FormRequest
                     }
                 },
             ],
-
-            /*
-             * track_id — The track context for this attendance record.
-             * Matches the ERD column added by the team on the
-             * attendance_records table.
-             */
-            'track_id' => [
-                'required',
-                'integer',
-                'exists:tracks,id',
-            ],
         ];
     }
 
@@ -92,20 +81,6 @@ class StoreAttendanceRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
-            // ── Guard: prevent duplicate attendance records ──────────
-            if ($this->filled(['session_id', 'student_id'])) {
-                $exists = AttendanceRecord::where('session_id', $this->input('session_id'))
-                    ->where('student_id', $this->input('student_id'))
-                    ->exists();
-
-                if ($exists) {
-                    $validator->errors()->add(
-                        'student_id',
-                        'An attendance record already exists for this student in the given session.'
-                    );
-                }
-            }
-
             // ── Guard: self-scan integrity ──────────────────────────
             // If the authenticated user happens to be a student (shouldn't
             // pass authorize(), but defense-in-depth), they may only scan

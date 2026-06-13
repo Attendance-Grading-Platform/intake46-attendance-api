@@ -28,6 +28,7 @@ class InstructorDashboardService
             'delivered_hours'    => $this->calculateDeliveredHours($instructor),
             'lab_groups'         => $this->getLabGroups($instructor),
             'grade_distribution' => $this->getGradeDistribution($instructor),
+            'next_session'       => $this->getNextSession($instructor),
         ];
     }
 
@@ -142,5 +143,45 @@ class InstructorDashboardService
         }
 
         return $buckets;
+    }
+
+    /* ──────────────────────────────────────────────
+     |  Next Session
+     |──────────────────────────────────────────────*/
+
+    /**
+     * Get the next upcoming session.
+     */
+    private function getNextSession(User $instructor): ?array
+    {
+        $now = now();
+        $currentTime = $now->format('H:i:s');
+        $currentDate = $now->toDateString();
+
+        $session = EngagementSession::whereHas('engagement', fn ($q) => $q->where('instructor_id', $instructor->id))
+            ->where(function ($query) use ($currentDate, $currentTime) {
+                $query->where('session_date', '>', $currentDate)
+                      ->orWhere(function ($q) use ($currentDate, $currentTime) {
+                          $q->where('session_date', '=', $currentDate)
+                            ->where('start_time', '>', $currentTime);
+                      });
+            })
+            ->orderBy('session_date')
+            ->orderBy('start_time')
+            ->first();
+
+        if (!$session) {
+            return null;
+        }
+
+        return [
+            'id' => $session->id,
+            'session_date' => $session->session_date->toDateString(),
+            'start_time' => $session->start_time,
+            'end_time' => $session->end_time,
+            'engagement' => [
+                'type' => $session->engagement->type,
+            ],
+        ];
     }
 }
