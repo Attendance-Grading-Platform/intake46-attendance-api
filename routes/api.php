@@ -196,6 +196,7 @@ Route::prefix('v1')
         Route::patch('/sessions/{session}', [SessionController::class, 'update'])->name('v1.sessions.update');
 
         // ── Announcements ────────────────────────────────
+        Route::get('/announcements', [AnnouncementController::class, 'instructorIndex'])->name('v1.announcements.index');
         Route::post('/announcements', [AnnouncementController::class, 'store'])->name('v1.announcements.store');
 
         // ── Attendance (ATT-1, ATT-4) ────────────────────

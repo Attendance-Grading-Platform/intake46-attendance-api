@@ -103,7 +103,7 @@ class SubmissionReviewService
             ->pluck('id')
             ->unique();
 
-        $deliverableComponentsCount = CourseComponent::where('type', 'deliverable')
+        $deliverableComponentsCount = CourseComponent::where('type', 'lab_deliverable')
             ->whereHas('course.cohorts', function ($q) use ($cohortIds) {
                 $q->whereIn('cohorts.id', $cohortIds);
             })
