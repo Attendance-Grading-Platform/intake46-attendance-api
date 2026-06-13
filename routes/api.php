@@ -165,6 +165,7 @@ Route::prefix('v1')
             Route::get('/grades', [GradeController::class, 'index'])->name('v1.me.grades');
             Route::get('/excuses', [ExcuseRequestController::class, 'index'])->name('v1.me.excuses');
             Route::post('/excuses', [ExcuseRequestController::class, 'store'])->name('v1.me.excuses.store');
+            Route::get('/excuses/{excuse}/attachment', [ExcuseRequestController::class, 'serveAttachment'])->name('v1.me.excuses.attachment');
             Route::get('/absent-sessions', [AttendanceController::class, 'absentSessions'])->name('v1.me.absent-sessions');
             Route::post('/deliverables', [SubmissionController::class, 'store'])->name('v1.me.submissions.store');
             Route::get('/announcements', [AnnouncementController::class, 'myAnnouncements'])->name('v1.me.announcements');
@@ -176,6 +177,7 @@ Route::prefix('v1')
         Route::apiResource('excuses', ExcuseRequestController::class)->names('v1.excuses')->parameters(['excuses' => 'excuse']);
         Route::put('/excuses/{excuse}/approve', [ExcuseRequestController::class, 'review'])->defaults('status', 'approved')->name('v1.excuses.approve');
         Route::put('/excuses/{excuse}/reject', [ExcuseRequestController::class, 'review'])->defaults('status', 'rejected')->name('v1.excuses.reject');
+        Route::get('/excuses/{excuse}/attachment', [ExcuseRequestController::class, 'serveAttachment'])->name('v1.excuses.attachment');
 
         // ── Attendance (ATT-1, ATT-4) ────────────────────
         Route::post('/attendance/scan', [AttendanceController::class, 'scan'])->name('v1.attendance.scan');
