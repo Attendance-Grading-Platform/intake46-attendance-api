@@ -169,6 +169,9 @@ Route::prefix('v1')
         Route::put('/excuses/{excuse}/approve', [ExcuseRequestController::class, 'review'])->defaults('status', 'approved')->name('v1.excuses.approve');
         Route::put('/excuses/{excuse}/reject', [ExcuseRequestController::class, 'review'])->defaults('status', 'rejected')->name('v1.excuses.reject');
 
+        // ── Attendance (ATT-1, ATT-4) ────────────────────
+        Route::post('/attendance/scan', [AttendanceController::class, 'scan'])->name('v1.attendance.scan');
+
         // ── Billing ──────────────────────────────────
         Route::prefix('billing')->group(function (): void {
             Route::get('/rollup', [BillingController::class, 'branchBilling'])->name('v1.billing.rollup');

@@ -7,12 +7,15 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ReviewExcuseRequest;
 use App\Http\Requests\StoreExcuseRequest;
+use App\Models\AttendanceLedger;
+use App\Models\AttendanceRecord;
 use App\Models\ExcuseRequest;
 use App\Services\ExcuseService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+
 
 
 /**
@@ -126,7 +129,6 @@ class ExcuseRequestController extends Controller
             reason:     $validated['reason'],
             attachment: $request->file('attachment'),
         );
-
 
         return $this->successResponse(
             $excuse->load(['student:id,name', 'session']),

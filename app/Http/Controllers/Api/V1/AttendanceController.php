@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreAttendanceRequest;
+use App\Models\AttendanceLedger;
 use App\Models\AttendanceRecord;
 use App\Models\EngagementSession;
 use App\Models\ExcuseRequest;
@@ -52,11 +53,13 @@ class AttendanceController extends Controller
      |  AttendanceService so this controller stays skinny.
      |──────────────────────────────────────────────────────────*/
 
-
     /**
      * Record attendance from a QR scan event.
      *
      * POST /api/v1/attendance/scan
+     *
+     * @param  StoreAttendanceRequest  $request  Validated & authorized payload.
+     * @return JsonResponse
      */
     public function scan(StoreAttendanceRequest $request): JsonResponse
     {
@@ -78,7 +81,11 @@ class AttendanceController extends Controller
             scannedBy: $request->user(),
         );
 
-        return $this->successResponse($record, 'Attendance recorded successfully.', 201);
+        return $this->successResponse(
+            $record,
+            'Attendance recorded successfully.',
+            201
+        );
     }
 
     /* ──────────────────────────────────────────────────────────
@@ -98,9 +105,8 @@ class AttendanceController extends Controller
      * GET /api/v1/students/{id}/attendance
      *
      * @param  Request  $request
-     * @param  int      $id  The student's user ID.
+     * @param  int|null $id  The student's user ID.
      * @return JsonResponse
-
      */
     public function studentAttendance(Request $request, $id = null): JsonResponse
     {
