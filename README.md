@@ -1,66 +1,194 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+<div align="center">
+  <img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="300" alt="Laravel Logo">
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+  <br />
+  <br />
 
-## About Laravel
+  [![Laravel](https://img.shields.io/badge/Laravel-11.x-FF2D20.svg?style=for-the-badge&logo=laravel&logoColor=white)](https://laravel.com)
+  [![PHP](https://img.shields.io/badge/PHP-8.2+-777BB4.svg?style=for-the-badge&logo=php&logoColor=white)](https://php.net)
+  [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16.0+-4169E1.svg?style=for-the-badge&logo=postgresql&logoColor=white)](https://postgresql.org)
+  [![Sanctum](https://img.shields.io/badge/Auth-Sanctum-4A5568.svg?style=for-the-badge&logo=laravel&logoColor=white)](https://laravel.com/docs/sanctum)
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+  <h3 align="center">ITI Attendance & Grading Platform - API</h3>
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+  <p align="center">
+    A robust, secure, and scalable backend system for academic management at ITI.
+    <br />
+    <a href="#about-the-project"><strong>Explore the docs »</strong></a>
+  </p>
+</div>
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+<details open>
+  <summary>Table of Contents</summary>
+  <ol>
+    <li><a href="#about-the-project">About The Project</a></li>
+    <li><a href="#technology-stack">Technology Stack</a></li>
+    <li><a href="#key-features-by-role">Key Features By Role</a></li>
+    <li><a href="#getting-started">Getting Started</a></li>
+    <li><a href="#seeded-test-accounts">Seeded Test Accounts</a></li>
+    <li><a href="#api-structure">API Structure</a></li>
+    <li><a href="#assumptions--technical-decisions">Assumptions & Technical Decisions</a></li>
+    <li><a href="#meet-the-team">Meet The Team</a></li>
+  </ol>
+</details>
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+---
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## 📖 About The Project
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+The ITI Attendance & Grading Platform is an enterprise-grade academic management system designed specifically for the Information Technology Institute (ITI). This repository contains the **Laravel API Backend**, which serves as the central brain of the platform.
 
-## Laravel Sponsors
+It is engineered to handle complex hierarchical data (Branches ➔ Tracks ➔ Cohorts ➔ Lab Groups ➔ Students), process real-time attendance tracking via QR codes, and dynamically calculate grading analytics based on submission timestamps and customizable penalty logic.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+---
 
-### Premium Partners
+## 🛠️ Technology Stack
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+* **Framework:** Laravel 11.x
+* **Language:** PHP 8.2+
+* **Database:** PostgreSQL 16.0+
+* **Authentication:** Laravel Sanctum (Token-based SPA Auth)
+* **API Architecture:** RESTful JSON API
 
-## Contributing
+---
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## ✨ Key Features By Role
 
-## Code of Conduct
+### 🏢 Branch Manager
+- **Global Overview:** View aggregated analytics across all tracks and cohorts.
+- **Financial Processing:** Generate and approve billing snapshots for instructors based on their compensation models (Hourly vs Fixed).
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### 📋 Track Admin
+- **Curriculum Management:** Create and configure courses, deliverables, and final exams.
+- **Scheduling:** Assign instructors to lab groups and schedule engagement sessions.
+- **Cohort Oversight:** Monitor at-risk students and overall grading throughput within their specific track.
 
-## Security Vulnerabilities
+### 👨‍🏫 Instructor
+- **Attendance Tracking:** Mark sessions as delivered and monitor student attendance.
+- **Grading Engine:** Review submissions and assign raw scores (system automatically calculates late penalties).
+- **Communication:** Post announcements to assigned cohorts.
+- **Excuse Processing:** Review and approve/reject absence excuses submitted by students.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### 🎓 Student
+- **Progress Tracking:** View a personalized dashboard with attendance ledger balances and normalized course grades.
+- **Deliverables:** Submit assignments securely.
+- **Excuses:** Upload medical or official documents to request absence waivers.
 
-## License
+---
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## 🚀 Getting Started
+
+To get a local copy up and running, follow these simple steps.
+
+### Prerequisites
+* PHP >= 8.2
+* Composer
+* PostgreSQL >= 16.0
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Attendance-Grading-Platform/intake46-attendance-api.git
+   cd intake46-attendance-api
+   ```
+
+2. **Install Dependencies**
+   ```bash
+   composer install
+   ```
+
+3. **Configure Environment**
+   ```bash
+   cp .env.example .env
+   ```
+   *Update the `.env` file with your PostgreSQL database credentials.*
+
+4. **Generate App Key**
+   ```bash
+   php artisan key:generate
+   ```
+
+5. **Link Storage**
+   *(Critical for accessing uploaded attachments like excuses and submissions)*
+   ```bash
+   php artisan storage:link
+   ```
+
+6. **Migrate & Seed the Database**
+   This command will build the schema and populate it with a comprehensive set of test data.
+   ```bash
+   php artisan migrate:fresh --seed
+   ```
+
+7. **Run the Development Server**
+   ```bash
+   php artisan serve
+   ```
+
+---
+
+## 🔑 Seeded Test Accounts
+
+The `AcademicStructureSeeder` populates the database with a complete academic hierarchy to test the platform's role-based authorization perfectly.
+
+**Password for ALL accounts:** `password`
+
+| Role | Email Address | Assigned To |
+| :--- | :--- | :--- |
+| **Branch Manager** | `manager@iti.edu.eg` | Global Access |
+| **Track Admin** | `karim.ashraf@iti.edu.eg` | Web Development Track |
+| **Track Admin** | `nour.samir@iti.edu.eg` | Mobile Development Track |
+| **Instructor** | `amira.khaled@iti.edu.eg` | Web Track Lab Groups |
+| **Instructor** | `youssef.nabil@iti.edu.eg` | Web Track Lab Groups |
+| **Instructor** | `sara.elsayed@iti.edu.eg` | Mobile Track Lab Groups |
+| **Student** | `ahmed.ali.46@student.iti.edu.eg` | Web Track Cohort |
+| **Student** | `alaa.ibrahim.46@student.iti.edu.eg`| Web Track Cohort |
+| **Student** | `adam.sherif.46@student.iti.edu.eg`| Mobile Track Cohort |
+| **Student** | `bishoy.emad.46@student.iti.edu.eg`| Mobile Track Cohort |
+| **Edge Case** | `expired@iti.edu.eg` | Testing Account Expiry |
+| **Edge Case** | `inactive@iti.edu.eg` | Testing Account Deactivation |
+
+---
+
+## 🔀 API Structure
+
+The application routes are logically separated in `routes/api.php` to handle different authentication contexts:
+
+* `/api/auth/*` - Public endpoints (Login, Password Reset).
+* `/api/v1/*` - The core protected REST API. Requires Sanctum Token and validates account expiry/activation.
+* `/api/scan/*` - High-performance fast-path endpoints specifically designed for IoT devices and mobile QR scanners.
+
+---
+
+## 🧠 Assumptions & Technical Decisions
+
+1. **Strict Query Isolation (RBAC):**
+   Security is not just an afterthought. We enforce Authorization Policies *and* query-level scoping. For example, when an Instructor requests submissions, the database query `whereIn` clause restricts the results exclusively to students in their assigned lab groups.
+   
+2. **Ephemeral vs Persistent Storage:**
+   By default, files are stored on the `local` disk (`storage/app/public`). If deploying to a cloud platform like Railway, **ephemeral storage will wipe uploaded files on every redeploy**. It is assumed that production deployments will update `FILESYSTEM_DISK=s3` or mount a persistent volume.
+
+3. **Dynamic Penalty System:**
+   The grading system allows instructors to input a `raw_score` and `raw_max`. The `LatePenaltyService` automatically calculates the final normalized score based on the difference between the submission `created_at` timestamp and the `CourseComponent` due date.
+
+4. **Analytics Heuristics:**
+   Determining if a student is "At Risk" is a computationally heavy operation. We determine risk by checking if the student's Attendance Ledger balance falls below `150` OR if any of their normalized course grades fall below `60%`.
+
+---
+
+## 👥 Meet The Team
+
+This project was brought to life by an incredible team of developers:
+
+* **Mostafa Khalifa** - [@Mostafa-Khalifaa](https://github.com/Mostafa-Khalifaa)
+* **Alaa Abdullah** - [@AlaaAbdullah13](https://github.com/AlaaAbdullah13)
+* **Hashim Abdulaziz** - [@HashimAbdulaziz](https://github.com/HashimAbdulaziz)
+* **Haneen Elasawy** - [@Haneenelasawy](https://github.com/Haneenelasawy)
+* **Mohamed Hamdy** - [@mohamedhamdy1](https://github.com/mohamedhamdy1)
+
+<div align="center">
+  <sub>Built with ❤️ at the Information Technology Institute (ITI).</sub>
+</div>
