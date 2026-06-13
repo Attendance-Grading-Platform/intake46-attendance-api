@@ -64,7 +64,6 @@ class DatabaseSeeder extends Seeder
             // ── Step 6: Excuses ──────────────────────────
             // requested / approved / rejected states
             ExcuseSeeder::class,
-
             // ── Step 7: Grades ───────────────────────────
             // Raw scores → normalized → grand total
             // Overrides with notes
