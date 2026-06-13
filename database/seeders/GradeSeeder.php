@@ -14,8 +14,8 @@ class GradeSeeder extends Seeder
         // Seed 20 random grades
         Grade::factory()->count(20)->create();
 
-        // Ensure the main student has grades for all course components
-        $student = User::where('email', 'student@iti.test')->first();
+        // Ensure the primary demo student has grades for all course components
+        $student = User::where('email', 'ahmed.ali.46@student.iti.edu.eg')->first();
         if ($student) {
             $components = CourseComponent::all();
             foreach ($components as $component) {
