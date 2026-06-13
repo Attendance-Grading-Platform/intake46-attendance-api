@@ -20,6 +20,22 @@ class SessionController extends Controller
     use ApiResponse;
 
     /**
+     * GET /api/v1/engagements/{engagement}/sessions
+     * Retrieve all sessions for a specific engagement.
+     */
+    public function index(Request $request, int $id): JsonResponse
+    {
+        $engagement = \App\Models\Engagement::findOrFail($id);
+        $this->authorize('view', $engagement);
+
+        $sessions = EngagementSession::where('engagement_id', $engagement->id)
+            ->orderBy('session_date')
+            ->get();
+
+        return $this->successResponse($sessions, 'Sessions retrieved successfully.');
+    }
+
+    /**
      * PATCH /api/v1/sessions/{session}
      *
      * Update the delivered flag on a session.
