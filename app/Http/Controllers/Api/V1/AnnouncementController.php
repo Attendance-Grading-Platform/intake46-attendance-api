@@ -8,12 +8,18 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Announcement;
 use App\Models\Cohort;
+use App\Services\AnnouncementService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class AnnouncementController extends Controller
 {
     use ApiResponse;
+
+    public function __construct(
+        private readonly AnnouncementService $announcementService
+    ) {}
 
     public function index(Cohort $cohort): JsonResponse
     {
@@ -26,6 +32,18 @@ class AnnouncementController extends Controller
         return $this->successResponse($announcements, 'Announcements retrieved successfully');
     }
 
+    public function instructorIndex(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        
+        if ($user->role !== 'instructor') {
+            return $this->errorResponse('Only instructors can access this history.', 403);
+        }
+
+        $announcements = $this->announcementService->getInstructorAnnouncements($user);
+        return $this->successResponse($announcements, 'Announcements retrieved successfully');
+    }
+
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -35,22 +53,14 @@ class AnnouncementController extends Controller
         ]);
 
         $cohort = Cohort::findOrFail($validated['cohort_id']);
-
-        // validate announcement using policy
         $this->authorize('create', [Announcement::class, $cohort]);
 
-        // ANN-2 / ENG-5: Instructor window enforcement (Date-only comparison)
         if ($request->user()->role === 'instructor') {
-            $hasActiveEngagement = \App\Models\Engagement::where('instructor_id', $request->user()->id)
-                ->whereHas('cohorts', function ($q) use ($cohort) {
-                    $q->where('cohorts.id', $cohort->id);
-                })
-                ->where('start_date', '<=', now()->toDateString())
-                ->where('end_date', '>=', now()->toDateString())
-                ->exists();
-
-            if (!$hasActiveEngagement) {
-                return $this->errorResponse('Instructors can only post announcements during their active engagement window.', 403);
+            try {
+                $announcement = $this->announcementService->createAnnouncement($request->user(), $validated);
+                return $this->successResponse($announcement, 'Announcement published successfully', 201);
+            } catch (HttpException $e) {
+                return $this->errorResponse($e->getMessage(), $e->getStatusCode());
             }
         }
 
@@ -112,8 +122,10 @@ class AnnouncementController extends Controller
             foreach ($cohorts as $cohort) {
                 $cohortIds[] = $cohort->id;
             }
+        } elseif ($user->role === 'track_admin') {
+            $cohortIds = $user->administeredCohorts()->pluck('cohorts.id')->toArray();
         } else {
-            // track admin or branch manager sees all
+            // branch manager sees all
             $cohortIds = Cohort::pluck('id')->toArray();
         }
 

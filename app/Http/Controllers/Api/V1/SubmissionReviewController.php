@@ -8,12 +8,17 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\SubmissionReviewResource;
 use App\Models\Submission;
 use App\Models\User;
+use App\Services\SubmissionReviewService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 
 class SubmissionReviewController extends Controller
 {
     use ApiResponse;
+
+    public function __construct(
+        private readonly SubmissionReviewService $submissionReviewService
+    ) {}
 
     /**
      * Display a listing of student submissions securely isolated to the instructor.
@@ -56,6 +61,46 @@ class SubmissionReviewController extends Controller
         $resourceCollection = SubmissionReviewResource::collection($submissions)->response()->getData(true);
 
         return $this->successResponse($resourceCollection, 'Submissions retrieved successfully.');
+    }
+
+    /**
+     * GET /api/v1/submissions/queue
+     * Display a filtered queue of submissions specifically for the instructor dashboard.
+     */
+    public function queue(Request $request)
+    {
+        $this->authorize('viewAny', Submission::class);
+        $user = $request->user();
+
+        if ($user->role !== 'instructor') {
+            return $this->errorResponse('Only instructors can access the submission queue.', 403);
+        }
+
+        $filters = $request->only(['course_id', 'lab_group_id', 'status']);
+        $submissions = $this->submissionReviewService->getQueue($user, $filters);
+
+        // Keep the API Response format consistent
+        $resourceCollection = SubmissionReviewResource::collection($submissions)->response()->getData(true);
+
+        return $this->successResponse($resourceCollection, 'Submission queue retrieved successfully.');
+    }
+
+    /**
+     * GET /api/v1/submissions/stats
+     * Display summary statistics for the instructor dashboard.
+     */
+    public function stats(Request $request)
+    {
+        $this->authorize('viewAny', Submission::class);
+        $user = $request->user();
+
+        if ($user->role !== 'instructor') {
+            return $this->errorResponse('Only instructors can access submission stats.', 403);
+        }
+
+        $stats = $this->submissionReviewService->getStats($user);
+
+        return $this->successResponse($stats, 'Submission stats retrieved successfully.');
     }
 
     /**

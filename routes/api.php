@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\ScannerController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CohortController;
 use App\Http\Controllers\Api\V1\CourseController;
+use App\Http\Controllers\Api\V1\DashboardController;
+use App\Http\Controllers\Api\V1\DeliverableController;
 use App\Http\Controllers\Api\V1\EngagementController;
 use App\Http\Controllers\Api\V1\SessionController;
 use App\Http\Controllers\Api\V1\TrackController;
@@ -99,6 +101,9 @@ Route::prefix('v1')
         Route::post('/lab-groups/{labGroup}/students', [LabGroupController::class, 'assignStudents'])->name('v1.lab-groups.assign-students');
         Route::delete('/lab-groups/{labGroup}/students/{studentId}', [LabGroupController::class, 'removeStudent'])->name('v1.lab-groups.remove-student');
 
+        // ── Dashboards & Analytics ────────────────────────
+        Route::get('/me/instructor-dashboard', [DashboardController::class, 'instructorDashboard'])->name('v1.me.instructor-dashboard');
+
         // ── Courses ─────────────────────────────────
         Route::get('/cohorts/{cohort}/courses', [CourseController::class, 'index'])->name('v1.courses.index');
         Route::post('/cohorts/{cohort}/courses', [CourseController::class, 'store'])->name('v1.courses.store');
@@ -119,7 +124,10 @@ Route::prefix('v1')
         // Detailed breakdown for a specific student (from release branch)
         Route::get('/students/{id}/grades-detail', [SubmissionReviewController::class, 'studentGradesDetail'])->name('v1.submissions.student.grades-detail');
 
-        // ── Deliverables ────────────────────────────
+        // ── Submissions & Grading Queue ─────────────
+        Route::get('/submissions/queue', [SubmissionReviewController::class, 'queue'])->name('v1.submissions.queue');
+        Route::get('/submissions/stats', [SubmissionReviewController::class, 'stats'])->name('v1.submissions.stats');
+        
         Route::get('/deliverables/{id}', [SubmissionReviewController::class, 'show'])->name('v1.deliverables.show');
         Route::put('/deliverables/{id}/grade', [SubmissionReviewController::class, 'update'])->name('v1.deliverables.grade');
 
@@ -160,7 +168,7 @@ Route::prefix('v1')
             Route::get('/absent-sessions', [AttendanceController::class, 'absentSessions'])->name('v1.me.absent-sessions');
             Route::post('/deliverables', [SubmissionController::class, 'store'])->name('v1.me.submissions.store');
             Route::get('/announcements', [AnnouncementController::class, 'myAnnouncements'])->name('v1.me.announcements');
-            Route::get('/progress', [AnalyticsController::class, 'myProgress'])->name('v1.me.progress');
+            Route::get('/progress', [\App\Http\Controllers\Api\V1\ProgressController::class, 'studentProgress'])->name('v1.me.progress');
             Route::get('/deliverables', [SubmissionController::class, 'index'])->name('v1.me.submissions.index');
         });
 
