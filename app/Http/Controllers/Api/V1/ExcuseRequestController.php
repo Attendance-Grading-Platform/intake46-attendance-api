@@ -233,4 +233,38 @@ class ExcuseRequestController extends Controller
 
         return $this->successResponse(null, 'Excuse request deleted successfully.');
     }
+
+    /* ──────────────────────────────────────────────────────────
+     |  GET /api/v1/me/excuses/{excuse}/attachment
+     |──────────────────────────────────────────────────────────
+     |  Streams the attachment file for an excuse request to the
+     |  authenticated student who owns it (or admins/managers).
+     |
+     |  Read-only — no state is mutated.
+     |  Authorization reuses the existing ExcuseRequestPolicy@view.
+     |──────────────────────────────────────────────────────────*/
+
+    /**
+     * Stream the attachment for an excuse request.
+     *
+     * GET /api/v1/me/excuses/{excuse}/attachment
+     *
+     * @param  ExcuseRequest  $excuse  Route-model-bound instance.
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse|JsonResponse
+     */
+    public function serveAttachment(ExcuseRequest $excuse): mixed
+    {
+        // Reuse existing policy: students can only access their own attachments
+        $this->authorize('view', $excuse);
+
+        if (! $excuse->attachment_path) {
+            return $this->errorResponse('This excuse request has no attachment.', 404);
+        }
+
+        if (! Storage::disk('local')->exists($excuse->attachment_path)) {
+            return $this->errorResponse('Attachment file not found on the server.', 404);
+        }
+
+        return Storage::disk('local')->response($excuse->attachment_path);
+    }
 }

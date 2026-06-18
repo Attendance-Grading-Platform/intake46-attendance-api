@@ -104,7 +104,7 @@ class SubmissionReviewService
             ->unique();
 
         $deliverableComponentsCount = CourseComponent::where('type', 'lab_deliverable')
-            ->whereHas('course.cohorts', function ($q) use ($cohortIds) {
+            ->whereHas('course.cohort', function ($q) use ($cohortIds) {
                 $q->whereIn('cohorts.id', $cohortIds);
             })
             ->where('due_date', '<', now())
@@ -149,11 +149,11 @@ class SubmissionReviewService
     private function getAvailableFilters(User $instructor): array
     {
         // Assigned Lab Groups
-        $labGroups = $instructor->instructedLabGroups()->select('lab_groups.id', 'lab_groups.name')->get();
+        $labGroups = $instructor->instructedLabGroups()->select('lab_groups.id', 'lab_groups.name', 'lab_groups.cohort_id')->get();
 
         // To get courses, we find any course that belongs to cohorts linked to the lab groups.
         $cohortIds = $labGroups->pluck('cohort_id')->unique();
-        $courses = \App\Models\Course::whereHas('cohorts', function ($q) use ($cohortIds) {
+        $courses = \App\Models\Course::whereHas('cohort', function ($q) use ($cohortIds) {
             $q->whereIn('cohorts.id', $cohortIds);
         })->select('courses.id', 'courses.name')->get();
 
