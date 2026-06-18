@@ -48,6 +48,11 @@ class AuthController extends Controller
         $user->tokens()->delete();
         $token = $user->createToken('auth_token')->plainTextToken;
 
+        $engagementEndDate = null;
+        if ($user->role === 'instructor') {
+            $engagementEndDate = $user->engagements()->max('end_date');
+        }
+
         // 4. Return unified payload for the Vue 3 Pinia Store
         return $this->successResponse([
             'token' => $token,
@@ -56,6 +61,8 @@ class AuthController extends Controller
                 'name'  => $user->name,
                 'email' => $user->email,
                 'role'  => $user->role, // Crucial for Frontend Contextual RBAC
+                'expiry_date' => $user->expiry_date,
+                'engagement_end_date' => $engagementEndDate,
             ],
         ], 'Login successful.');
     }
@@ -80,11 +87,19 @@ class AuthController extends Controller
      */
     public function me(Request $request): JsonResponse
     {
+        $user = $request->user();
+        $engagementEndDate = null;
+        if ($user->role === 'instructor') {
+            $engagementEndDate = $user->engagements()->max('end_date');
+        }
+
         return $this->successResponse([
-            'id'    => $request->user()->id,
-            'name'  => $request->user()->name,
-            'email' => $request->user()->email,
-            'role'  => $request->user()->role,
+            'id'    => $user->id,
+            'name'  => $user->name,
+            'email' => $user->email,
+            'role'  => $user->role,
+            'expiry_date' => $user->expiry_date,
+            'engagement_end_date' => $engagementEndDate,
         ], 'Profile retrieved successfully.');
     }
 

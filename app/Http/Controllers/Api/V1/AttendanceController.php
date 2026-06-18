@@ -74,10 +74,19 @@ class AttendanceController extends Controller
         //   3. Updating the AttendanceLedger balance.
         //   4. Evaluating and persisting StudentRiskFlags if balance < 150.
 
+        $student = User::find($validated['student_id']);
+        $trackId = 1; // Default fallback
+        if ($student) {
+            $cohort = $student->enrolledCohorts()->first();
+            if ($cohort) {
+                $trackId = $cohort->track_id;
+            }
+        }
+
         $record = $this->attendanceService->processScan(
             sessionId: (int) $validated['session_id'],
             studentId: (int) $validated['student_id'],
-            trackId:   (int) $validated['track_id'],
+            trackId:   $trackId,
             scannedBy: $request->user(),
         );
 
@@ -195,15 +204,52 @@ class AttendanceController extends Controller
             return $this->errorResponse('You cannot view this session attendance.', 403);
         }
 
-        $records = AttendanceRecord::where('session_id', $session->getKey())
-            ->with('student:id,name,email')
-            ->orderBy('arrived_at')
+        // Get all cohorts attached to this engagement
+        $cohortIds = $session->engagement->cohorts()->pluck('cohorts.id')->toArray();
+
+        // Get all students enrolled in those cohorts
+        $students = User::where('role', 'student')
+            ->whereHas('enrolledCohorts', function ($q) use ($cohortIds) {
+                $q->whereIn('cohorts.id', $cohortIds);
+            })
+            ->select('id', 'name', 'email')
+            ->orderBy('name')
             ->get();
 
+        // Get attendance records for this session
+        $records = AttendanceRecord::where('session_id', $session->getKey())
+            ->get()
+            ->keyBy('student_id');
+
+        // Get excuse requests for this session
+        $excuses = ExcuseRequest::where('session_id', $session->getKey())
+            ->get()
+            ->keyBy('student_id');
+
+        // Combine into a roster
+        $roster = $students->map(function ($student) use ($records, $excuses) {
+            $record = $records->get($student->id);
+            $excuse = $excuses->get($student->id);
+
+            return [
+                'student' => $student,
+                'record'  => $record ? [
+                    'id'         => $record->id,
+                    'status'     => $record->status,
+                    'arrived_at' => $record->arrived_at,
+                    'left_at'    => $record->left_at,
+                ] : null,
+                'excuse'  => $excuse ? [
+                    'id'     => $excuse->id,
+                    'status' => $excuse->status,
+                ] : null,
+            ];
+        });
+
         $data = [
-            'session_id' => $session->getKey(),
+            'session_id'   => $session->getKey(),
             'session_date' => $session->session_date,
-            'records' => $records,
+            'records'      => $roster, // returning 'records' as the full roster to maintain frontend structure (but frontend will need updates)
         ];
 
         return $this->successResponse($data, 'Session attendance retrieved successfully.');
@@ -215,8 +261,13 @@ class AttendanceController extends Controller
     {
         $user = $request->user();
 
-        if ($user->role != 'track_admin' && $user->role != 'branch_manager') {
-            return $this->errorResponse('Only Track Admins can mark students absent.', 403);
+        // Allow Instructors, Track Admins, and Branch Managers to mark absent
+        if (!in_array($user->role, ['track_admin', 'branch_manager', 'instructor'])) {
+            return $this->errorResponse('You do not have permission to mark students absent.', 403);
+        }
+
+        if ($user->role == 'instructor' && $session->engagement->instructor_id != $user->id) {
+            return $this->errorResponse('You can only mark students absent for your own sessions.', 403);
         }
 
         $validated = $request->validate([
@@ -227,19 +278,13 @@ class AttendanceController extends Controller
         $count = 0;
 
         foreach ($validated['student_ids'] as $studentId) {
-            // check if record already exists
-            $existing = AttendanceRecord::where('student_id', $studentId)
-                ->where('session_id', $session->getKey())
-                ->first();
+            $record = $this->attendanceService->markAbsent(
+                $session->getKey(),
+                $studentId,
+                $user
+            );
 
-            if (!$existing) {
-                // create absent record - observer will deduct 25 from ledger
-                AttendanceRecord::create([
-                    'student_id' => $studentId,
-                    'session_id' => $session->getKey(),
-                    'arrived_at' => null,
-                    'left_at' => null,
-                ]);
+            if ($record) {
                 $count++;
             }
         }

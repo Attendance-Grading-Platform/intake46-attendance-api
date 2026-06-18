@@ -46,11 +46,20 @@ class SubmissionReviewService
 
         $paginator = $query->latest()->paginate(15);
 
-        // Append 'days_since' manually
+        // Append 'days_since' manually and calculate 'days_late'
         $paginator->getCollection()->transform(function ($submission) {
             $submission->days_since = $submission->created_at 
                 ? max(0, $submission->created_at->startOfDay()->diffInDays(now()->startOfDay(), false)) 
                 : 0;
+
+            $submission->days_late = 0;
+            if ($submission->courseComponent && $submission->courseComponent->due_date) {
+                $cutoff = \Carbon\Carbon::parse($submission->courseComponent->due_date)->endOfDay();
+                if ($submission->created_at->greaterThan($cutoff)) {
+                    $submission->days_late = $submission->created_at->startOfDay()->diffInDays($cutoff->startOfDay(), true);
+                }
+            }
+
             return $submission;
         });
 
@@ -104,8 +113,8 @@ class SubmissionReviewService
             ->unique();
 
         $deliverableComponentsCount = CourseComponent::where('type', 'lab_deliverable')
-            ->whereHas('course.cohorts', function ($q) use ($cohortIds) {
-                $q->whereIn('cohorts.id', $cohortIds);
+            ->whereHas('course', function ($q) use ($cohortIds) {
+                $q->whereIn('cohort_id', $cohortIds);
             })
             ->where('due_date', '<', now())
             ->count();
@@ -153,9 +162,9 @@ class SubmissionReviewService
 
         // To get courses, we find any course that belongs to cohorts linked to the lab groups.
         $cohortIds = $labGroups->pluck('cohort_id')->unique();
-        $courses = \App\Models\Course::whereHas('cohorts', function ($q) use ($cohortIds) {
-            $q->whereIn('cohorts.id', $cohortIds);
-        })->select('courses.id', 'courses.name')->get();
+        $courses = \App\Models\Course::whereIn('cohort_id', $cohortIds)
+            ->select('courses.id', 'courses.name')
+            ->get();
 
         return [
             'courses'    => $courses,

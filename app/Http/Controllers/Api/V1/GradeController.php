@@ -70,11 +70,42 @@ class GradeController extends Controller
             'student_id' => 'required|exists:users,id',
             'course_component_id' => 'required|exists:course_components,id',
             'raw_score' => 'required|numeric|min:0',
-            'raw_max' => 'required|numeric|min:1',
+            'raw_max' => 'required|numeric|gt:0',
         ]);
 
         if ($validated['raw_score'] > $validated['raw_max']) {
             return $this->errorResponse('raw_score cannot be more than raw_max.', 422);
+        }
+
+        $component = \App\Models\CourseComponent::find($validated['course_component_id']);
+        $normalizedScore = $validated['raw_score'];
+
+        if ($component->type === 'lab_deliverable') {
+            $submission = \App\Models\Submission::where('student_id', $validated['student_id'])
+                ->where('course_component_id', $validated['course_component_id'])
+                ->first();
+
+            if ($submission && $component->due_date) {
+                // Cutoff is 23:59:59 server time on the due date.
+                $cutoff = \Carbon\Carbon::parse($component->due_date)->endOfDay();
+                
+                if ($submission->created_at->greaterThan($cutoff)) {
+                    // Start of day of created_at - start of day of cutoff
+                    // Example: cutoff is Jun 10 23:59. Submitted Jun 11 00:01.
+                    // difference is 1 day.
+                    $daysLate = $submission->created_at->startOfDay()->diffInDays($cutoff->startOfDay(), true);
+                    
+                    if ($daysLate == 1) {
+                        $normalizedScore = $validated['raw_score'] * 0.75;
+                    } elseif ($daysLate == 2) {
+                        $normalizedScore = $validated['raw_score'] * 0.50;
+                    } elseif ($daysLate == 3) {
+                        $normalizedScore = $validated['raw_score'] * 0.25;
+                    } elseif ($daysLate >= 4) {
+                        $normalizedScore = 0;
+                    }
+                }
+            }
         }
 
         $grade = Grade::updateOrCreate(
@@ -86,10 +117,11 @@ class GradeController extends Controller
                 'graded_by' => $request->user()->id,
                 'raw_score' => $validated['raw_score'],
                 'raw_max' => $validated['raw_max'],
+                'normalized_score' => $normalizedScore,
             ]
         );
 
-        $grade->final_score = $grade->raw_score;
+        $grade->final_score = $grade->normalized_score;
 
         return $this->successResponse(new GradeResource($grade), 'Grade saved successfully.', 201);
     }
@@ -112,15 +144,46 @@ class GradeController extends Controller
 
         $validated = $request->validate([
             'raw_score' => 'required|numeric|min:0',
-            'raw_max' => 'required|numeric|min:1',
+            'raw_max' => 'required|numeric|gt:0',
         ]);
 
         if ($validated['raw_score'] > $validated['raw_max']) {
             return $this->errorResponse('raw_score cannot be more than raw_max.', 422);
         }
 
-        $grade->update($validated);
-        $grade->final_score = $grade->raw_score;
+        $component = \App\Models\CourseComponent::find($grade->course_component_id);
+        $normalizedScore = $validated['raw_score'];
+
+        if ($component->type === 'lab_deliverable') {
+            $submission = \App\Models\Submission::where('student_id', $grade->student_id)
+                ->where('course_component_id', $grade->course_component_id)
+                ->first();
+
+            if ($submission && $component->due_date) {
+                $cutoff = \Carbon\Carbon::parse($component->due_date)->endOfDay();
+                
+                if ($submission->created_at->greaterThan($cutoff)) {
+                    $daysLate = $submission->created_at->startOfDay()->diffInDays($cutoff->startOfDay(), true);
+                    
+                    if ($daysLate == 1) {
+                        $normalizedScore = $validated['raw_score'] * 0.75;
+                    } elseif ($daysLate == 2) {
+                        $normalizedScore = $validated['raw_score'] * 0.50;
+                    } elseif ($daysLate == 3) {
+                        $normalizedScore = $validated['raw_score'] * 0.25;
+                    } elseif ($daysLate >= 4) {
+                        $normalizedScore = 0;
+                    }
+                }
+            }
+        }
+
+        $grade->update([
+            'raw_score' => $validated['raw_score'],
+            'raw_max' => $validated['raw_max'],
+            'normalized_score' => $normalizedScore,
+        ]);
+        $grade->final_score = $grade->normalized_score;
 
         return $this->successResponse(new GradeResource($grade->fresh()), 'Grade updated successfully.');
     }
